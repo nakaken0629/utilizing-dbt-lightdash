@@ -1,0 +1,60 @@
+version: 2
+
+models:
+  - name: stg_customers
+    description: "顧客マスタのステージングモデル"
+    columns:
+      - name: customer_id
+        description: "顧客ID"
+        tests:
+          - unique
+          - not_null
+      - name: first_name
+        description: "名"
+      - name: last_name
+        description: "姓"
+      - name: full_name
+        description: "氏名（姓 + 名）"
+      - name: email
+        description: "メールアドレス"
+        tests:
+          - unique
+          - not_null
+      - name: created_at
+        description: "登録日"
+
+  - name: stg_orders
+    description: "注文データのステージングモデル"
+    columns:
+      - name: order_id
+        description: "注文ID"
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: "顧客ID"
+        tests:
+          - not_null
+      - name: product_id
+        description: "商品ID"
+        tests:
+          - not_null
+      - name: quantity
+        description: "注文数量"
+      - name: ordered_at
+        description: "注文日"
+
+  - name: stg_products
+    description: "商品マスタのステージングモデル"
+    columns:
+      - name: product_id
+        description: "商品ID"
+        tests:
+          - unique
+          - not_null
+      - name: product_name
+        description: "商品名"
+      - name: category
+        description: "カテゴリ"
+      - name: price
+        description: "単価（円）"

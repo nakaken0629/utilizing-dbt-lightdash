@@ -1,0 +1,24 @@
+version: 2
+
+models:
+  - name: int_orders_with_products
+    description: "注文データと商品マスタを結合し、注文金額を算出した中間モデル"
+    columns:
+      - name: order_id
+        description: "注文ID"
+      - name: customer_id
+        description: "顧客ID"
+      - name: product_id
+        description: "商品ID"
+      - name: product_name
+        description: "商品名"
+      - name: category
+        description: "商品カテゴリ"
+      - name: quantity
+        description: "注文数量"
+      - name: price
+        description: "商品単価（円）"
+      - name: order_amount
+        description: "注文金額（数量 × 単価）"
+      - name: ordered_at
+        description: "注文日"

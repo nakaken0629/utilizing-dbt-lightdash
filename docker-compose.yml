@@ -1,0 +1,84 @@
+services:
+  db:
+    image: postgres:15.4
+    restart: always
+    environment:
+      POSTGRES_USER: ${PGUSER}
+      POSTGRES_PASSWORD: ${PGPASSWORD}
+      POSTGRES_DB: ${PGDATABASE}
+    ports:
+      - "5433:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  dwh-db:
+    image: postgres:15.4
+    restart: always
+    environment:
+      POSTGRES_USER: ${DWH_PGUSER}
+      POSTGRES_PASSWORD: ${DWH_PGPASSWORD}
+      POSTGRES_DB: ${DWH_PGDATABASE}
+    ports:
+      - "5434:5432"
+    volumes:
+      - dwh-data:/var/lib/postgresql/data
+
+  minio:
+    image: minio/minio
+    restart: always
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+
+  minio-init:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 3;
+      mc alias set local http://minio:9000 minioadmin minioadmin;
+      mc mb --ignore-existing local/lightdash;
+      exit 0;
+      "
+
+  lightdash:
+    image: lightdash/lightdash:latest
+    platform: linux/amd64
+    restart: always
+    depends_on:
+      - db
+      - dwh-db
+      - minio-init
+    environment:
+      PGHOST: ${PGHOST}
+      PGPORT: ${PGPORT}
+      PGUSER: ${PGUSER}
+      PGPASSWORD: ${PGPASSWORD}
+      PGDATABASE: ${PGDATABASE}
+      LIGHTDASH_SECRET: ${LIGHTDASH_SECRET}
+      SITE_URL: ${SITE_URL}
+      PORT: 8080
+      LIGHTDASH_LOG_LEVEL: debug
+      LIGHTDASH_QUERY_MAX_LIMIT: 5000
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: lightdash
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_FORCE_PATH_STYLE: "true"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./dbt_project:/usr/app/dbt
+
+volumes:
+  db-data:
+  dwh-data:
+  minio-data:
