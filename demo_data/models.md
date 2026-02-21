@@ -35,6 +35,19 @@ member テーブルと 1:1 の関係。会員の行動シミュレーション�
 | created_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 作成日時 | DEFAULT NOW() |
 | updated_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 更新日時 | DEFAULT NOW() |
 
+## food（食品）
+
+category テーブルと 1:多 の関係（1つのカテゴリに複数の食品が属する）。
+
+| カラム名 | データ型 | 制約 | 説明 | データ投入ルール |
+|---|---|---|---|---|
+| id | SERIAL | PRIMARY KEY | 主キー（自動採番） | 自動採番 |
+| name | VARCHAR(100) | NOT NULL | 食品名 | mimesis の Food プロバイダーでカテゴリに対応するメソッドを使って生成（料理→dish(), 飲み物→drink(), 果物→fruit(), 野菜→vegetable(), スパイス→spices()） |
+| category_id | INTEGER | NOT NULL, REFERENCES category(id) | カテゴリID | food の name を生成した Food メソッドに対応する category レコードを逆引きして id を設定（dish()→料理、drink()→飲み物、fruit()→果物、vegetable()→野菜、spices()→スパイス） |
+| price | NUMERIC(10,2) | NOT NULL | 値段 | mimesis の Finance プロバイダーで生成 |
+| created_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 作成日時 | DEFAULT NOW() |
+| updated_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 更新日時 | DEFAULT NOW() |
+
 ## 注意
 
 データ投入ルールはメタデータなので、対応する列は作成しない。
