@@ -1,0 +1,31 @@
+# テーブル設計書
+
+## member（会員）
+
+| カラム名 | データ型 | 制約 | 説明 | データ投入ルール |
+|---|---|---|---|---|
+| id | SERIAL | PRIMARY KEY | 主キー（自動採番） | 自動採番 |
+| last_name | VARCHAR(50) | NOT NULL | 苗字 | mimesis で日本語の苗字を生成 |
+| first_name | VARCHAR(50) | NOT NULL | 名前 | mimesis で日本語の名前を生成 |
+| birth_date | DATE | NOT NULL | 生年月日 | mimesis で 18〜70 歳の範囲でランダム生成。ただし分布は18〜30が50%、31〜60が40%。それ以上が10%になるようにする |
+| gender | SMALLINT | NOT NULL | 性別（0: 男 / 1: 女 / 2: それ以外） | 0 / 1 / 2 をランダムに選択。ただし分布は男が7%、それ以外が1%、女は残り全てとなるようにする |
+| address | VARCHAR(255) | NOT NULL | 住所 | mimesis で日本語の住所(県名＋市町村名＋番地など）を生成 |
+| status | SMALLINT | NOT NULL | ステータス（0: 無料会員 / 1: 有料会員 / 9: 退会会員） | 0（無料会員）固定で挿入 |
+| last_login_at | TIMESTAMP | | 最終ログイン日時 | NULL で挿入 |
+| created_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 作成日時 | DEFAULT NOW() |
+| updated_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 更新日時 | DEFAULT NOW() |
+
+## member_property（会員属性）
+
+member テーブルと 1:1 の関係。会員の行動シミュレーション用パラメータを保持する。
+
+| カラム名 | データ型 | 制約 | 説明 | データ投入ルール |
+|---|---|---|---|---|
+| id | INTEGER | PRIMARY KEY, REFERENCES member(id) | 会員ID（member テーブルと 1:1） | member テーブルの id と同値 |
+| to_paid_days | INTEGER | | 有料会員になる登録日からの日数（NULL: 有料会員にならない） | 90%の確率でNULL、10%の確率で30から180の範囲でランダムに設定 |
+| to_sleep_days | INTEGER | | 休眠会員になる登録日からの日数（NULL: 休眠しない） | to_paid_daysがNULLでなければNULL。そうでなければ80%の確率でNULL、20%の確率で30から180の範囲でランダムに設定 |
+| to_quit_days | INTEGER | | 退会する登録日からの日数（NULL: 退会しない） | to_sleep_daysがNULLでなければNULL。そうでなければ95%の確率でNULL、5%の確率で20%の確率で30から180の範囲でランダムに設定した値か、to_paid_daysの日数に30を加えたもののうち、大きい方 |
+
+## 注意
+
+データ投入ルールはメタデータなので、対応する列は作成しない。

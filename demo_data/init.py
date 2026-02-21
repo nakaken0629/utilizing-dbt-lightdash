@@ -12,6 +12,7 @@ design.md の仕様に基づき、デモ用データベースを初期化しま�
   2. DEMO-EC データベースを新規作成する
   3. DEMO-EC-DEVELOPER ユーザーが存在しない場合は作成する
   4. DEMO-EC-DEVELOPER ユーザーに PUBLIC スキーマへの全権限を付与する
+  5. models.md の定義に従いテーブルを作成する
 """
 
 import os
@@ -91,6 +92,43 @@ def grant_connect_privilege(
     print(f"  ユーザー '{user}' にデータベース '{db_name}' への接続権限を付与しました")
 
 
+def create_tables(db_name: str) -> None:
+    """models.md の定義に従いテーブルを作成する"""
+    demo_conn_params = {**CONN_PARAMS, "dbname": db_name}
+    conn = psycopg2.connect(**demo_conn_params)
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS member (
+                id           SERIAL       PRIMARY KEY,
+                last_name    VARCHAR(50)  NOT NULL,
+                first_name   VARCHAR(50)  NOT NULL,
+                birth_date   DATE         NOT NULL,
+                gender       SMALLINT     NOT NULL,
+                address      VARCHAR(255) NOT NULL,
+                status       SMALLINT     NOT NULL,
+                last_login_at TIMESTAMP,
+                created_at   TIMESTAMP    NOT NULL DEFAULT NOW(),
+                updated_at   TIMESTAMP    NOT NULL DEFAULT NOW()
+            )
+        """)
+        print("  テーブル 'member' を作成しました")
+
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS member_property (
+                id            INTEGER PRIMARY KEY REFERENCES member(id),
+                to_paid_days  INTEGER,
+                to_sleep_days INTEGER,
+                to_quit_days  INTEGER
+            )
+        """)
+        print("  テーブル 'member_property' を作成しました")
+
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def grant_schema_privileges(db_name: str, user: str) -> None:
     """DEMO-EC データベースに接続し、PUBLIC スキーマへの全権限を付与する"""
     demo_conn_params = {**CONN_PARAMS, "dbname": db_name}
@@ -128,21 +166,24 @@ def main() -> None:
         conn = psycopg2.connect(**CONN_PARAMS)
         conn.autocommit = True
 
-        print("[1/4] データベースを削除（存在する場合）...")
+        print("[1/5] データベースを削除（存在する場合）...")
         drop_database_if_exists(conn, DEMO_DB)
 
-        print("[2/4] データベースを作成...")
+        print("[2/5] データベースを作成...")
         create_database(conn, DEMO_DB)
 
-        print("[3/4] ユーザーを作成（存在しない場合）...")
+        print("[3/5] ユーザーを作成（存在しない場合）...")
         create_user_if_not_exists(conn, DEMO_USER, DEMO_PASSWORD)
 
-        print("[4/4] 権限を付与...")
+        print("[4/5] 権限を付与...")
         grant_connect_privilege(conn, DEMO_DB, DEMO_USER)
         conn.close()
         conn = None
 
         grant_schema_privileges(DEMO_DB, DEMO_USER)
+
+        print("[5/5] テーブルを作成...")
+        create_tables(DEMO_DB)
 
     except psycopg2.OperationalError as e:
         print(f"\n[エラー] データベースに接続できません: {e}", file=sys.stderr)
