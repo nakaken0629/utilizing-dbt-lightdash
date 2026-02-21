@@ -42,9 +42,9 @@ category テーブルと 1:多 の関係（1つのカテゴリに複数の食品
 | カラム名 | データ型 | 制約 | 説明 | データ投入ルール |
 |---|---|---|---|---|
 | id | SERIAL | PRIMARY KEY | 主キー（自動採番） | 自動採番 |
-| name | VARCHAR(100) | NOT NULL | 食品名 | mimesis の Food プロバイダーでカテゴリに対応するメソッドを使って生成（料理→dish(), 飲み物→drink(), 果物→fruit(), 野菜→vegetable(), スパイス→spices()） |
+| name | VARCHAR(100) | NOT NULL | 食品名 | mimesis の Food プロバイダーでカテゴリに対応するメソッドを使って生成（料理→dish(), 飲み物→drink(), 果物→fruit(), 野菜→vegetable(), スパイス→spices()）。同名が重複した場合は末尾に連番を付与（例: "りんご 2"） |
 | category_id | INTEGER | NOT NULL, REFERENCES category(id) | カテゴリID | food の name を生成した Food メソッドに対応する category レコードを逆引きして id を設定（dish()→料理、drink()→飲み物、fruit()→果物、vegetable()→野菜、spices()→スパイス） |
-| price | NUMERIC(10,2) | NOT NULL | 値段 | mimesis の Finance プロバイダーで生成 |
+| price | INTEGER | NOT NULL | 値段 | mimesis の Finance プロバイダーで生成し、1000円未満は10円単位で切り捨て、1000円以上は100円単位で切り捨て |
 | created_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 作成日時 | DEFAULT NOW() |
 | updated_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 更新日時 | DEFAULT NOW() |
 

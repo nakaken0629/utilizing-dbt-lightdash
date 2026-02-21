@@ -18,7 +18,7 @@ from pathlib import Path
 
 import psycopg2
 import psycopg2.extras
-from mimesis import Address, Person
+from mimesis import Address, Finance, Food, Person
 from mimesis.locales import Locale
 from dotenv import load_dotenv
 
@@ -116,6 +116,17 @@ def generate_member_property(member_id: int) -> tuple:
     return (member_id, to_paid_days, to_sleep_days, to_quit_days)
 
 
+def _round_price(price: int) -> int:
+    """価格を単位に従って切り捨てる。
+
+    1000円未満: 10円単位で切り捨て
+    1000円以上: 100円単位で切り捨て
+    """
+    if price < 1000:
+        return (price // 10) * 10
+    return (price // 100) * 100
+
+
 # ---------------------------------------------------------------------------
 # DB 操作
 # ---------------------------------------------------------------------------
@@ -146,6 +157,63 @@ def insert_categories(
         rows,
     )
     print(f"  category: {len(rows)} 件挿入しました")
+
+
+def get_category_id_map(cur: psycopg2.extensions.cursor) -> dict[str, int]:
+    """category テーブルから name → id のマッピングを取得する"""
+    cur.execute("SELECT id, name FROM category")
+    return {name: id_ for id_, name in cur.fetchall()}
+
+
+def insert_foods(
+    cur: psycopg2.extensions.cursor,
+    count: int,
+    start_date: date,
+    category_id_map: dict[str, int],
+) -> None:
+    """food テーブルにテストデータを投入する。
+
+    Food メソッドでカテゴリに対応する食品名を生成し、
+    category_id は category テーブルから逆引きして設定する。
+    price は Finance プロバイダーで生成する。
+    created_at / updated_at は開始日を設定する。
+    """
+    food = Food(locale=Locale.JA)
+    finance = Finance(locale=Locale.JA)
+
+    # Foodメソッドと対応する日本語カテゴリ名のマッピング
+    category_methods = [
+        (food.dish,      "料理"),
+        (food.drink,     "飲み物"),
+        (food.fruit,     "果物"),
+        (food.vegetable, "野菜"),
+        (food.spices,    "スパイス"),
+    ]
+
+    name_counts: dict[str, int] = {}
+    rows = []
+    for _ in range(count):
+        method, category_name = random.choice(category_methods)
+        base_name = method()
+        name_counts[base_name] = name_counts.get(base_name, 0) + 1
+        name = base_name if name_counts[base_name] == 1 else f"{base_name} {name_counts[base_name]}"
+        rows.append((
+            name,
+            category_id_map[category_name],
+            _round_price(int(finance.price())),
+            start_date,
+            start_date,
+        ))
+
+    psycopg2.extras.execute_values(
+        cur,
+        """
+        INSERT INTO food (name, category_id, price, created_at, updated_at)
+        VALUES %s
+        """,
+        rows,
+    )
+    print(f"  food: {len(rows)} 件挿入しました")
 
 
 def get_member_count(cur: psycopg2.extensions.cursor) -> int:
@@ -223,6 +291,11 @@ def seed(start_date: date) -> None:
 
         print("カテゴリデータを投入中...")
         insert_categories(cur, start_date)
+        conn.commit()
+
+        print("食品データを投入中...")
+        category_id_map = get_category_id_map(cur)
+        insert_foods(cur, 1000, start_date, category_id_map)
         conn.commit()
         print()
 
