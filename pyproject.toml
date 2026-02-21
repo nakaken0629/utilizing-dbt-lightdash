@@ -5,6 +5,9 @@ description = "dbt + Lightdash データ基盤プロジェクト"
 requires-python = ">=3.11"
 dependencies = [
     "dbt-postgres>=1.8,<1.9",
+    "mimesis>=18.0",
+    "psycopg2-binary>=2.9",
+    "python-dotenv>=1.0",
 ]
 
 [tool.uv]
