@@ -18,7 +18,7 @@ from pathlib import Path
 
 import psycopg2
 import psycopg2.extras
-from mimesis import Address, Food, Person
+from mimesis import Address, Person
 from mimesis.locales import Locale
 from dotenv import load_dotenv
 
@@ -124,18 +124,18 @@ def insert_categories(
     cur: psycopg2.extensions.cursor,
     target_date: date,
 ) -> None:
-    """Food プロバイダーの各種類を1件ずつ category テーブルに投入する。
+    """Food プロバイダーのメソッド名を日本語訳して category テーブルに投入する。
 
     dish / drink / fruit / vegetable / spices の5件を固定で挿入する。
+    name にはメソッド名の日本語訳を保存する。
     created_at / updated_at は開始日を設定する。
     """
-    food = Food(locale=Locale.JA)
     rows = [
-        (food.dish(),      target_date, target_date),
-        (food.drink(),     target_date, target_date),
-        (food.fruit(),     target_date, target_date),
-        (food.vegetable(), target_date, target_date),
-        (food.spices(),    target_date, target_date),
+        ("料理",     target_date, target_date),
+        ("飲み物",   target_date, target_date),
+        ("果物",     target_date, target_date),
+        ("野菜",     target_date, target_date),
+        ("スパイス", target_date, target_date),
     ]
     psycopg2.extras.execute_values(
         cur,

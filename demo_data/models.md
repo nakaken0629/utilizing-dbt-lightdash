@@ -31,7 +31,7 @@ member テーブルと 1:1 の関係。会員の行動シミュレーション�
 | カラム名 | データ型 | 制約 | 説明 | データ投入ルール |
 |---|---|---|---|---|
 | id | SERIAL | PRIMARY KEY | 主キー（自動採番） | 自動採番 |
-| name | VARCHAR(100) | NOT NULL | カテゴリ名 | mimesis の Food プロバイダーで用意されている種類(例：dish, drink, その他）を一つずつ保存 |
+| name | VARCHAR(100) | NOT NULL | カテゴリ名 | mimesis の Food プロバイダーで用意されているgenerate用のメソッド名(例：dish, drink, その他）を日本語にして一つずつ保存 |
 | created_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 作成日時 | DEFAULT NOW() |
 | updated_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 更新日時 | DEFAULT NOW() |
 
