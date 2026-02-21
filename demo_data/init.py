@@ -124,6 +124,16 @@ def create_tables(db_name: str) -> None:
         """)
         print("  テーブル 'member_property' を作成しました")
 
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS category (
+                id         SERIAL       PRIMARY KEY,
+                name       VARCHAR(100) NOT NULL,
+                created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMP    NOT NULL DEFAULT NOW()
+            )
+        """)
+        print("  テーブル 'category' を作成しました")
+
         conn.commit()
     finally:
         conn.close()

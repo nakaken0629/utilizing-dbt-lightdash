@@ -26,6 +26,15 @@ member テーブルと 1:1 の関係。会員の行動シミュレーション�
 | to_sleep_days | INTEGER | | 休眠会員になる登録日からの日数（NULL: 休眠しない） | to_paid_daysがNULLでなければNULL。そうでなければ80%の確率でNULL、20%の確率で30から180の範囲でランダムに設定 |
 | to_quit_days | INTEGER | | 退会する登録日からの日数（NULL: 退会しない） | to_sleep_daysがNULLでなければNULL。そうでなければ95%の確率でNULL、5%の確率で20%の確率で30から180の範囲でランダムに設定した値か、to_paid_daysの日数に30を加えたもののうち、大きい方 |
 
+## category（カテゴリ）
+
+| カラム名 | データ型 | 制約 | 説明 | データ投入ルール |
+|---|---|---|---|---|
+| id | SERIAL | PRIMARY KEY | 主キー（自動採番） | 自動採番 |
+| name | VARCHAR(100) | NOT NULL | カテゴリ名 | mimesis の Food プロバイダーで用意されている種類(例：dish, drink, その他）を一つずつ保存 |
+| created_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 作成日時 | DEFAULT NOW() |
+| updated_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 更新日時 | DEFAULT NOW() |
+
 ## 注意
 
 データ投入ルールはメタデータなので、対応する列は作成しない。

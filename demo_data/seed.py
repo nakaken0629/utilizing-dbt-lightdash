@@ -18,7 +18,7 @@ from pathlib import Path
 
 import psycopg2
 import psycopg2.extras
-from mimesis import Address, Person
+from mimesis import Address, Food, Person
 from mimesis.locales import Locale
 from dotenv import load_dotenv
 
@@ -120,6 +120,34 @@ def generate_member_property(member_id: int) -> tuple:
 # DB 操作
 # ---------------------------------------------------------------------------
 
+def insert_categories(
+    cur: psycopg2.extensions.cursor,
+    target_date: date,
+) -> None:
+    """Food プロバイダーの各種類を1件ずつ category テーブルに投入する。
+
+    dish / drink / fruit / vegetable / spices の5件を固定で挿入する。
+    created_at / updated_at は開始日を設定する。
+    """
+    food = Food(locale=Locale.JA)
+    rows = [
+        (food.dish(),      target_date, target_date),
+        (food.drink(),     target_date, target_date),
+        (food.fruit(),     target_date, target_date),
+        (food.vegetable(), target_date, target_date),
+        (food.spices(),    target_date, target_date),
+    ]
+    psycopg2.extras.execute_values(
+        cur,
+        """
+        INSERT INTO category (name, created_at, updated_at)
+        VALUES %s
+        """,
+        rows,
+    )
+    print(f"  category: {len(rows)} 件挿入しました")
+
+
 def get_member_count(cur: psycopg2.extensions.cursor) -> int:
     """現在の会員数を取得する"""
     cur.execute("SELECT COUNT(*) FROM member")
@@ -189,9 +217,13 @@ def seed(start_date: date) -> None:
         cur = conn.cursor()
 
         # 全テーブルを初期化（CASCADE で参照先も連鎖削除）
-        cur.execute("TRUNCATE TABLE member CASCADE")
+        cur.execute("TRUNCATE TABLE member, category CASCADE")
         conn.commit()
         print("  全テーブルをクリアしました")
+
+        print("カテゴリデータを投入中...")
+        insert_categories(cur, start_date)
+        conn.commit()
         print()
 
         current_date = start_date
