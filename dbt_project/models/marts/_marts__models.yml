@@ -3,85 +3,361 @@ version: 2
 models:
   - name: fct_purchase
     description: "購入ファクトテーブル（購入明細粒度）"
+    config:
+      meta:
+        label: "購入明細"
+        primary_key: id
+        group_details:
+          purchase_info:
+            label: "購入情報"
+          amounts:
+            label: "金額・数量"
+        metrics:
+          num_purchases:
+            type: count_distinct
+            sql: "${TABLE}.purchase_id"
+            label: "購入回数"
+            description: "ユニークな購入件数"
+          num_line_items:
+            type: count
+            sql: "${TABLE}.id"
+            label: "明細件数"
+            description: "購入明細の総件数"
+        joins:
+          - join: dim_member
+            type: left
+            sql_on: "${fct_purchase.member_id} = ${dim_member.id}"
+            relationship: many-to-one
+          - join: dim_food
+            type: left
+            sql_on: "${fct_purchase.food_id} = ${dim_food.id}"
+            relationship: many-to-one
     columns:
       - name: id
         description: "明細ID"
         tests:
           - unique
           - not_null
+        config:
+          meta:
+            dimension:
+              type: number
+              label: "明細ID"
+              hidden: true
       - name: purchase_id
         description: "購入ID"
         tests:
           - not_null
+        config:
+          meta:
+            dimension:
+              type: number
+              label: "購入ID"
+              groups: ["purchase_info"]
       - name: member_id
         description: "会員ID"
         tests:
           - not_null
+        config:
+          meta:
+            dimension:
+              type: number
+              label: "会員ID"
+              hidden: true
       - name: food_id
         description: "食品ID"
         tests:
           - not_null
+        config:
+          meta:
+            dimension:
+              type: number
+              label: "食品ID"
+              hidden: true
       - name: purchased_at
         description: "購入日時"
+        config:
+          meta:
+            dimension:
+              type: timestamp
+              label: "購入日時"
+              time_intervals: ['RAW', 'DAY', 'WEEK', 'MONTH', 'QUARTER', 'YEAR']
+              groups: ["purchase_info"]
       - name: shipping_address
         description: "送付先住所"
+        config:
+          meta:
+            dimension:
+              type: string
+              label: "送付先住所"
+              groups: ["purchase_info"]
       - name: unit_price
         description: "単価（購入時点、円）"
+        config:
+          meta:
+            dimension:
+              type: number
+              label: "単価"
+              format: "¥#,##0"
+              groups: ["amounts"]
+            metrics:
+              avg_unit_price:
+                type: average
+                label: "平均単価"
+                format: "¥#,##0"
       - name: quantity
         description: "数量"
+        config:
+          meta:
+            dimension:
+              type: number
+              label: "数量"
+              groups: ["amounts"]
+            metrics:
+              total_quantity:
+                type: sum
+                label: "販売数量合計"
       - name: subtotal
         description: "小計（円）"
+        config:
+          meta:
+            dimension:
+              type: number
+              label: "小計"
+              format: "¥#,##0"
+              groups: ["amounts"]
+            metrics:
+              total_revenue:
+                type: sum
+                label: "売上合計"
+                format: "¥#,##0"
+                description: "購入明細の小計合計"
+              avg_subtotal:
+                type: average
+                label: "平均小計"
+                format: "¥#,##0"
 
   - name: dim_member
     description: "会員ディメンションテーブル"
+    config:
+      meta:
+        label: "会員"
+        primary_key: id
+        group_details:
+          personal_info:
+            label: "個人情報"
+          membership:
+            label: "会員情報"
+          activity:
+            label: "アクティビティ"
+        metrics:
+          total_members:
+            type: count
+            sql: "${TABLE}.id"
+            label: "会員数"
+            description: "全会員数"
+          paid_members:
+            type: count
+            sql: "${TABLE}.id"
+            label: "有料会員数"
+            description: "ステータスが有料会員（1）の件数"
+            filters:
+              - status: 1
     columns:
       - name: id
         description: "会員ID"
         tests:
           - unique
           - not_null
+        config:
+          meta:
+            dimension:
+              type: number
+              label: "会員ID"
+              hidden: true
       - name: last_name
         description: "苗字"
+        config:
+          meta:
+            dimension:
+              type: string
+              label: "苗字"
+              groups: ["personal_info"]
       - name: first_name
         description: "名前"
+        config:
+          meta:
+            dimension:
+              type: string
+              label: "名前"
+              groups: ["personal_info"]
       - name: birth_date
         description: "生年月日"
+        config:
+          meta:
+            dimension:
+              type: date
+              label: "生年月日"
+              time_intervals: ['DAY', 'MONTH', 'YEAR']
+              groups: ["personal_info"]
       - name: gender
         description: "性別（0: 男 / 1: 女 / 2: それ以外）"
+        config:
+          meta:
+            dimension:
+              type: number
+              label: "性別"
+              description: "0: 男 / 1: 女 / 2: それ以外"
+              groups: ["personal_info"]
       - name: address
         description: "住所"
+        config:
+          meta:
+            dimension:
+              type: string
+              label: "住所"
+              groups: ["personal_info"]
       - name: status
         description: "ステータス（0: 無料会員 / 1: 有料会員 / 9: 退会）"
+        config:
+          meta:
+            dimension:
+              type: number
+              label: "ステータス"
+              description: "0: 無料会員 / 1: 有料会員 / 9: 退会"
+              groups: ["membership"]
       - name: paid_at
         description: "有料会員登録日"
+        config:
+          meta:
+            dimension:
+              type: date
+              label: "有料会員登録日"
+              time_intervals: ['DAY', 'MONTH', 'YEAR']
+              groups: ["membership"]
       - name: quit_at
         description: "退会日"
+        config:
+          meta:
+            dimension:
+              type: date
+              label: "退会日"
+              time_intervals: ['DAY', 'MONTH', 'YEAR']
+              groups: ["membership"]
       - name: last_login_at
         description: "最終ログイン日時"
+        config:
+          meta:
+            dimension:
+              type: timestamp
+              label: "最終ログイン日時"
+              time_intervals: ['RAW', 'DAY', 'WEEK', 'MONTH', 'YEAR']
+              groups: ["activity"]
       - name: created_at
         description: "作成日時"
+        config:
+          meta:
+            dimension:
+              type: timestamp
+              label: "作成日時"
+              hidden: true
       - name: updated_at
         description: "更新日時"
+        config:
+          meta:
+            dimension:
+              type: timestamp
+              label: "更新日時"
+              hidden: true
 
   - name: dim_food
     description: "食品ディメンションテーブル（カテゴリ情報含む）"
+    config:
+      meta:
+        label: "食品"
+        primary_key: id
+        group_details:
+          product_info:
+            label: "商品情報"
+        metrics:
+          total_foods:
+            type: count
+            sql: "${TABLE}.id"
+            label: "食品数"
+            description: "全食品件数"
     columns:
       - name: id
         description: "食品ID"
         tests:
           - unique
           - not_null
+        config:
+          meta:
+            dimension:
+              type: number
+              label: "食品ID"
+              hidden: true
       - name: name
         description: "食品名"
+        config:
+          meta:
+            dimension:
+              type: string
+              label: "食品名"
+              groups: ["product_info"]
       - name: category_id
         description: "カテゴリID"
         tests:
           - not_null
+        config:
+          meta:
+            dimension:
+              type: number
+              label: "カテゴリID"
+              hidden: true
       - name: category_name
         description: "カテゴリ名"
+        config:
+          meta:
+            dimension:
+              type: string
+              label: "カテゴリ名"
+              groups: ["product_info"]
       - name: price
         description: "値段（円）"
+        config:
+          meta:
+            dimension:
+              type: number
+              label: "価格"
+              format: "¥#,##0"
+              groups: ["product_info"]
+            metrics:
+              avg_price:
+                type: average
+                label: "平均価格"
+                format: "¥#,##0"
+              max_price:
+                type: max
+                label: "最高価格"
+                format: "¥#,##0"
+              min_price:
+                type: min
+                label: "最低価格"
+                format: "¥#,##0"
       - name: created_at
         description: "作成日時"
+        config:
+          meta:
+            dimension:
+              type: timestamp
+              label: "作成日時"
+              hidden: true
       - name: updated_at
         description: "更新日時"
+        config:
+          meta:
+            dimension:
+              type: timestamp
+              label: "更新日時"
+              hidden: true
