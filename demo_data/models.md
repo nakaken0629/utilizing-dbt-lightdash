@@ -1,6 +1,8 @@
 # テーブル設計書
 
-## member（会員）
+## スキーマ設計
+
+### member（会員）
 
 | カラム名 | データ型 | 制約 | 説明 | データ投入ルール |
 |---|---|---|---|---|
@@ -10,12 +12,14 @@
 | birth_date | DATE | NOT NULL | 生年月日 | mimesis で 18〜70 歳の範囲でランダム生成。ただし分布は18〜30が50%、31〜60が40%。それ以上が10%になるようにする |
 | gender | SMALLINT | NOT NULL | 性別（0: 男 / 1: 女 / 2: それ以外） | 0 / 1 / 2 をランダムに選択。ただし分布は男が7%、それ以外が1%、女は残り全てとなるようにする |
 | address | VARCHAR(255) | NOT NULL | 住所 | mimesis で日本語の住所(県名＋市町村名＋番地など）を生成 |
-| status | SMALLINT | NOT NULL | ステータス（0: 無料会員 / 1: 有料会員 / 9: 退会会員） | 0（無料会員）固定で挿入 |
+| status | SMALLINT | NOT NULL | ステータス | 0（無料会員）固定で挿入 |
+| paid_at | TIMESTAMP | | 有料会員登録日 | NULL で挿入 |
+| quit_at | TIMESTAMP | | 退会日 | NULL で挿入 |
 | last_login_at | TIMESTAMP | | 最終ログイン日時 | NULL で挿入 |
 | created_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 作成日時 | DEFAULT NOW() |
 | updated_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 更新日時 | DEFAULT NOW() |
 
-## member_property（会員属性）
+### member_property（会員属性）
 
 member テーブルと 1:1 の関係。会員の行動シミュレーション用パラメータを保持する。
 
@@ -26,7 +30,7 @@ member テーブルと 1:1 の関係。会員の行動シミュレーション�
 | to_sleep_days | INTEGER | | 休眠会員になる登録日からの日数（NULL: 休眠しない） | to_paid_daysがNULLでなければNULL。そうでなければ80%の確率でNULL、20%の確率で30から180の範囲でランダムに設定 |
 | to_quit_days | INTEGER | | 退会する登録日からの日数（NULL: 退会しない） | to_sleep_daysがNULLでなければNULL。そうでなければ95%の確率でNULL、5%の確率で20%の確率で30から180の範囲でランダムに設定した値か、to_paid_daysの日数に30を加えたもののうち、大きい方 |
 
-## category（カテゴリ）
+### category（カテゴリ）
 
 | カラム名 | データ型 | 制約 | 説明 | データ投入ルール |
 |---|---|---|---|---|
@@ -35,7 +39,7 @@ member テーブルと 1:1 の関係。会員の行動シミュレーション�
 | created_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 作成日時 | DEFAULT NOW() |
 | updated_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 更新日時 | DEFAULT NOW() |
 
-## food（食品）
+### food（食品）
 
 category テーブルと 1:多 の関係（1つのカテゴリに複数の食品が属する）。
 
@@ -48,7 +52,7 @@ category テーブルと 1:多 の関係（1つのカテゴリに複数の食品
 | created_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 作成日時 | DEFAULT NOW() |
 | updated_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 更新日時 | DEFAULT NOW() |
 
-## purchase（購入）
+### purchase（購入）
 
 member テーブルと 1:多 の関係（1会員が複数回購入できる）。
 
@@ -63,7 +67,7 @@ member テーブルと 1:多 の関係（1会員が複数回購入できる）�
 | created_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 作成日時 | DEFAULT NOW() |
 | updated_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 更新日時 | DEFAULT NOW() |
 
-## purchase_detail（購入明細）
+### purchase_detail（購入明細）
 
 purchase テーブルと 1:多 の関係（1購入に複数の明細が紐づく）。
 
@@ -78,6 +82,30 @@ purchase テーブルと 1:多 の関係（1購入に複数の明細が紐づく
 | subtotal | INTEGER | NOT NULL | 小計 | unit_price × quantity |
 | created_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 作成日時 | DEFAULT NOW() |
 | updated_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 更新日時 | DEFAULT NOW() |
+
+### member_status_log（会員ステータス変更履歴）
+
+member テーブルと 1:多 の関係。会員のステータス変更を記録する。
+
+| カラム名 | データ型 | 制約 | 説明 | データ投入ルール |
+|---|---|---|---|---|
+| id | SERIAL | PRIMARY KEY | 主キー（自動採番） | 自動採番 |
+| member_id | INTEGER | NOT NULL, REFERENCES member(id) | 会員ID | member テーブルの id を設定 |
+| status_before | SMALLINT | NOT NULL | 変更前ステータス | データ投入処理の中で設定 |
+| status_after | SMALLINT | NOT NULL | 変更後ステータス | データ投入処理の中で設定 |
+| changed_at | TIMESTAMP | NOT NULL | 変更日 | データ投入処理の中で設定 |
+| created_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 作成日時 | DEFAULT NOW() |
+| updated_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 更新日時 | DEFAULT NOW() |
+
+## 区分値
+
+### member.status / member_status_log.status_before / member_status_log.status_after
+
+| 値 | 説明 |
+|---|---|
+| 0 | 無料会員 |
+| 1 | 有料会員 |
+| 9 | 退会 |
 
 ## 注意
 

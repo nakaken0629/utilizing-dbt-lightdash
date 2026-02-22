@@ -326,6 +326,78 @@ def insert_members_for_day(
     return [(row[0], row[1], row[2], row[3]) for row in inserted]
 
 
+def update_member_statuses_for_day(
+    cur: psycopg2.extensions.cursor,
+    target_date: date,
+) -> None:
+    """指定日に発生する会員ステータス変更を処理する。
+
+    member_property の to_paid_days / to_quit_days を参照し、
+    登録日からの経過日数に応じてステータスを更新する。
+    変更履歴は member_status_log に記録する。
+    """
+    # 有料会員に昇格（無料会員 → 有料会員）
+    cur.execute(
+        """
+        SELECT m.id
+        FROM member m
+        JOIN member_property mp ON m.id = mp.id
+        WHERE mp.to_paid_days IS NOT NULL
+          AND m.status = 0
+          AND m.created_at::date + mp.to_paid_days = %s
+        """,
+        (target_date,),
+    )
+    paid_ids = [row[0] for row in cur.fetchall()]
+
+    if paid_ids:
+        cur.execute(
+            "UPDATE member SET status = 1, paid_at = %s, updated_at = %s WHERE id = ANY(%s)",
+            (target_date, target_date, paid_ids),
+        )
+        psycopg2.extras.execute_values(
+            cur,
+            """
+            INSERT INTO member_status_log (member_id, status_before, status_after, changed_at)
+            VALUES %s
+            """,
+            [(mid, 0, 1, target_date) for mid in paid_ids],
+        )
+
+    # 退会（無料会員または有料会員 → 退会）
+    cur.execute(
+        """
+        SELECT m.id, m.status
+        FROM member m
+        JOIN member_property mp ON m.id = mp.id
+        WHERE mp.to_quit_days IS NOT NULL
+          AND m.status != 9
+          AND m.created_at::date + mp.to_quit_days = %s
+        """,
+        (target_date,),
+    )
+    quit_members = cur.fetchall()
+
+    if quit_members:
+        quit_ids = [row[0] for row in quit_members]
+        cur.execute(
+            "UPDATE member SET status = 9, quit_at = %s, updated_at = %s WHERE id = ANY(%s)",
+            (target_date, target_date, quit_ids),
+        )
+        psycopg2.extras.execute_values(
+            cur,
+            """
+            INSERT INTO member_status_log (member_id, status_before, status_after, changed_at)
+            VALUES %s
+            """,
+            [(mid, status, 9, target_date) for mid, status in quit_members],
+        )
+
+    total_changes = len(paid_ids) + len(quit_members)
+    if total_changes > 0:
+        print(f"  member_status_log: 有料昇格 {len(paid_ids)} 件、退会 {len(quit_members)} 件")
+
+
 # ---------------------------------------------------------------------------
 # メイン処理
 # ---------------------------------------------------------------------------
@@ -400,6 +472,10 @@ def seed(start_date: date) -> None:
                     properties,
                 )
                 conn.commit()
+
+            # ステータス変更処理（有料昇格・退会）
+            update_member_statuses_for_day(cur, current_date)
+            conn.commit()
 
             # 購入データを投入（全会員の約 2% + ランダム 0〜3 件）
             if all_members:

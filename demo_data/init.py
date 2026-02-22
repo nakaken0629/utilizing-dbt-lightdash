@@ -107,6 +107,8 @@ def create_tables(db_name: str) -> None:
                 gender       SMALLINT     NOT NULL,
                 address      VARCHAR(255) NOT NULL,
                 status       SMALLINT     NOT NULL,
+                paid_at      TIMESTAMP,
+                quit_at      TIMESTAMP,
                 last_login_at TIMESTAMP,
                 created_at   TIMESTAMP    NOT NULL DEFAULT NOW(),
                 updated_at   TIMESTAMP    NOT NULL DEFAULT NOW()
@@ -174,6 +176,19 @@ def create_tables(db_name: str) -> None:
             )
         """)
         print("  テーブル 'purchase_detail' を作成しました")
+
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS member_status_log (
+                id            SERIAL    PRIMARY KEY,
+                member_id     INTEGER   NOT NULL REFERENCES member(id),
+                status_before SMALLINT  NOT NULL,
+                status_after  SMALLINT  NOT NULL,
+                changed_at    TIMESTAMP NOT NULL,
+                created_at    TIMESTAMP NOT NULL DEFAULT NOW(),
+                updated_at    TIMESTAMP NOT NULL DEFAULT NOW()
+            )
+        """)
+        print("  テーブル 'member_status_log' を作成しました")
 
         conn.commit()
     finally:
