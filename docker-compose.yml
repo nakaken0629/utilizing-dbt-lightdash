@@ -28,17 +28,6 @@ services:
       timeout: 5s
       retries: 10
 
-  dbt:
-    image: ghcr.io/dbt-labs/dbt-postgres:1.8.latest
-    depends_on:
-      dwh-db:
-        condition: service_healthy
-    volumes:
-      - ./dbt_project:/usr/app/dbt
-      - ./docker/dbt/profiles.yml:/root/.dbt/profiles.yml
-    working_dir: /usr/app/dbt
-    platform: linux/amd64
-
   minio:
     image: minio/minio
     restart: always
