@@ -1,18 +1,19 @@
 name: demo_ec
-version: "1.0.0"
+version: 1.0.0
 config-version: 2
-
 profile: demo_ec
-
-model-paths: ["models"]
-test-paths: ["tests"]
-analysis-paths: ["analyses"]
-macro-paths: ["macros"]
-target-path: "target"
+model-paths:
+  - models
+test-paths:
+  - tests
+analysis-paths:
+  - analyses
+macro-paths:
+  - macros
+target-path: target
 clean-targets:
-  - "target"
-  - "dbt_packages"
-
+  - target
+  - dbt_packages
 models:
   demo_ec:
     staging:
