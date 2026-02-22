@@ -10,9 +10,9 @@
 | last_name | VARCHAR(50) | NOT NULL | 苗字 | mimesis で日本語の苗字を生成 |
 | first_name | VARCHAR(50) | NOT NULL | 名前 | mimesis で日本語の名前を生成 |
 | birth_date | DATE | NOT NULL | 生年月日 | mimesis で 18〜70 歳の範囲でランダム生成。ただし分布は18〜30が50%、31〜60が40%。それ以上が10%になるようにする |
-| gender | SMALLINT | NOT NULL | 性別（0: 男 / 1: 女 / 2: それ以外） | 0 / 1 / 2 をランダムに選択。ただし分布は男が7%、それ以外が1%、女は残り全てとなるようにする |
+| gender | VARCHAR(10) | NOT NULL | 性別（0: 男 / 1: 女 / 2: それ以外） | 0 / 1 / 2 をランダムに選択。ただし分布は男が7%、それ以外が1%、女は残り全てとなるようにする |
 | address | VARCHAR(255) | NOT NULL | 住所 | mimesis で日本語の住所(県名＋市町村名＋番地など）を生成 |
-| status | SMALLINT | NOT NULL | ステータス | 0（無料会員）固定で挿入 |
+| status | VARCHAR(10) | NOT NULL | ステータス | 0（無料会員）固定で挿入 |
 | paid_at | TIMESTAMP | | 有料会員登録日 | NULL で挿入 |
 | quit_at | TIMESTAMP | | 退会日 | NULL で挿入 |
 | last_login_at | TIMESTAMP | | 最終ログイン日時 | NULL で挿入 |
@@ -91,13 +91,21 @@ member テーブルと 1:多 の関係。会員のステータス変更を記録
 |---|---|---|---|---|
 | id | SERIAL | PRIMARY KEY | 主キー（自動採番） | 自動採番 |
 | member_id | INTEGER | NOT NULL, REFERENCES member(id) | 会員ID | member テーブルの id を設定 |
-| status_before | SMALLINT | NOT NULL | 変更前ステータス | データ投入処理の中で設定 |
-| status_after | SMALLINT | NOT NULL | 変更後ステータス | データ投入処理の中で設定 |
+| status_before | VARCHAR(10) | NOT NULL | 変更前ステータス | データ投入処理の中で設定 |
+| status_after | VARCHAR(10) | NOT NULL | 変更後ステータス | データ投入処理の中で設定 |
 | changed_at | TIMESTAMP | NOT NULL | 変更日 | データ投入処理の中で設定 |
 | created_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 作成日時 | DEFAULT NOW() |
 | updated_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 更新日時 | DEFAULT NOW() |
 
 ## 区分値
+
+### member.gender
+
+| 値 | 説明 |
+|---|---|
+| 0 | 男 |
+| 1 | 女 |
+| 2 | それ以外 |
 
 ### member.status / member_status_log.status_before / member_status_log.status_after
 

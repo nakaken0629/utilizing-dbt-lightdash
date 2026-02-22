@@ -104,9 +104,9 @@ def create_tables(db_name: str) -> None:
                 last_name    VARCHAR(50)  NOT NULL,
                 first_name   VARCHAR(50)  NOT NULL,
                 birth_date   DATE         NOT NULL,
-                gender       SMALLINT     NOT NULL,
+                gender       VARCHAR(10)  NOT NULL,
                 address      VARCHAR(255) NOT NULL,
-                status       SMALLINT     NOT NULL,
+                status       VARCHAR(10)  NOT NULL,
                 paid_at      TIMESTAMP,
                 quit_at      TIMESTAMP,
                 last_login_at TIMESTAMP,
@@ -181,8 +181,8 @@ def create_tables(db_name: str) -> None:
             CREATE TABLE IF NOT EXISTS member_status_log (
                 id            SERIAL    PRIMARY KEY,
                 member_id     INTEGER   NOT NULL REFERENCES member(id),
-                status_before SMALLINT  NOT NULL,
-                status_after  SMALLINT  NOT NULL,
+                status_before VARCHAR(10) NOT NULL,
+                status_after  VARCHAR(10) NOT NULL,
                 changed_at    TIMESTAMP NOT NULL,
                 created_at    TIMESTAMP NOT NULL DEFAULT NOW(),
                 updated_at    TIMESTAMP NOT NULL DEFAULT NOW()

@@ -62,7 +62,16 @@ def generate_birth_date() -> date:
     return date(birth_year, birth_month, birth_day)
 
 
-def generate_gender() -> int:
+GENDER_MALE = "0"
+GENDER_FEMALE = "1"
+GENDER_OTHER = "2"
+
+STATUS_NORMAL = "0"
+STATUS_PAID = "1"
+STATUS_QUIT = "9"
+
+
+def generate_gender() -> str:
     """性別を分布に従って生成する。
 
     分布:
@@ -72,11 +81,11 @@ def generate_gender() -> int:
     """
     r = random.random()
     if r < 0.07:
-        return 0
+        return GENDER_MALE
     elif r < 0.08:
-        return 2
+        return GENDER_OTHER
     else:
-        return 1
+        return GENDER_FEMALE
 
 
 def generate_member_property(member_id: int) -> tuple:
@@ -275,17 +284,17 @@ def get_active_members_for_day(
         SELECT m.id, m.last_name, m.first_name, m.address, m.status
         FROM member m
         JOIN member_property mp ON m.id = mp.id
-        WHERE m.status != 9
+        WHERE m.status != %s
           AND (
             mp.to_sleep_days IS NULL
             OR m.created_at::date + mp.to_sleep_days > %s
           )
         """,
-        (target_date,),
+        (STATUS_QUIT, target_date),
     )
     rows = cur.fetchall()
-    normal = [(r[0], r[1], r[2], r[3]) for r in rows if r[4] == 0]
-    paid = [(r[0], r[1], r[2], r[3]) for r in rows if r[4] == 1]
+    normal = [(r[0], r[1], r[2], r[3]) for r in rows if r[4] == STATUS_NORMAL]
+    paid = [(r[0], r[1], r[2], r[3]) for r in rows if r[4] == STATUS_PAID]
     return normal, paid
 
 
@@ -385,7 +394,7 @@ def insert_members_for_day(
             generate_birth_date(),
             generate_gender(),
             address.state() + address.city() + address.address(),
-            0,            # status: 無料会員
+            STATUS_NORMAL,  # status: 無料会員
             None,         # last_login_at
             target_date,  # created_at
             target_date,  # updated_at
@@ -425,17 +434,17 @@ def update_member_statuses_for_day(
         FROM member m
         JOIN member_property mp ON m.id = mp.id
         WHERE mp.to_paid_days IS NOT NULL
-          AND m.status = 0
+          AND m.status = %s
           AND m.created_at::date + mp.to_paid_days = %s
         """,
-        (target_date,),
+        (STATUS_NORMAL, target_date),
     )
     paid_ids = [row[0] for row in cur.fetchall()]
 
     if paid_ids:
         cur.execute(
-            "UPDATE member SET status = 1, paid_at = %s, updated_at = %s WHERE id = ANY(%s)",
-            (target_date, target_date, paid_ids),
+            "UPDATE member SET status = %s, paid_at = %s, updated_at = %s WHERE id = ANY(%s)",
+            (STATUS_PAID, target_date, target_date, paid_ids),
         )
         psycopg2.extras.execute_values(
             cur,
@@ -443,7 +452,7 @@ def update_member_statuses_for_day(
             INSERT INTO member_status_log (member_id, status_before, status_after, changed_at)
             VALUES %s
             """,
-            [(mid, 0, 1, target_date) for mid in paid_ids],
+            [(mid, STATUS_NORMAL, STATUS_PAID, target_date) for mid in paid_ids],
         )
 
     # 退会（無料会員または有料会員 → 退会）
@@ -453,18 +462,18 @@ def update_member_statuses_for_day(
         FROM member m
         JOIN member_property mp ON m.id = mp.id
         WHERE mp.to_quit_days IS NOT NULL
-          AND m.status != 9
+          AND m.status != %s
           AND m.created_at::date + mp.to_quit_days = %s
         """,
-        (target_date,),
+        (STATUS_QUIT, target_date),
     )
     quit_members = cur.fetchall()
 
     if quit_members:
         quit_ids = [row[0] for row in quit_members]
         cur.execute(
-            "UPDATE member SET status = 9, quit_at = %s, updated_at = %s WHERE id = ANY(%s)",
-            (target_date, target_date, quit_ids),
+            "UPDATE member SET status = %s, quit_at = %s, updated_at = %s WHERE id = ANY(%s)",
+            (STATUS_QUIT, target_date, target_date, quit_ids),
         )
         psycopg2.extras.execute_values(
             cur,
@@ -472,7 +481,7 @@ def update_member_statuses_for_day(
             INSERT INTO member_status_log (member_id, status_before, status_after, changed_at)
             VALUES %s
             """,
-            [(mid, status, 9, target_date) for mid, status in quit_members],
+            [(mid, status, STATUS_QUIT, target_date) for mid, status in quit_members],
         )
 
     total_changes = len(paid_ids) + len(quit_members)

@@ -162,7 +162,7 @@ models:
             label: "有料会員数"
             description: "ステータスが有料会員（1）の件数"
             filters:
-              - status: 1
+              - status: "1"
     columns:
       - name: id
         description: "会員ID"
@@ -205,7 +205,7 @@ models:
         config:
           meta:
             dimension:
-              type: number
+              type: string
               label: "性別"
               description: "0: 男 / 1: 女 / 2: それ以外"
               groups: ["personal_info"]
@@ -222,7 +222,7 @@ models:
         config:
           meta:
             dimension:
-              type: number
+              type: string
               label: "ステータス"
               description: "0: 無料会員 / 1: 有料会員 / 9: 退会"
               groups: ["membership"]
