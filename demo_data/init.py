@@ -146,6 +146,35 @@ def create_tables(db_name: str) -> None:
         """)
         print("  テーブル 'food' を作成しました")
 
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS purchase (
+                id               SERIAL       PRIMARY KEY,
+                member_id        INTEGER      NOT NULL REFERENCES member(id),
+                member_name      VARCHAR(100) NOT NULL,
+                shipping_address VARCHAR(255) NOT NULL,
+                purchased_at     TIMESTAMP    NOT NULL,
+                total_amount     INTEGER      NOT NULL,
+                created_at       TIMESTAMP    NOT NULL DEFAULT NOW(),
+                updated_at       TIMESTAMP    NOT NULL DEFAULT NOW()
+            )
+        """)
+        print("  テーブル 'purchase' を作成しました")
+
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS purchase_detail (
+                id          SERIAL       PRIMARY KEY,
+                purchase_id INTEGER      NOT NULL REFERENCES purchase(id),
+                food_id     INTEGER      NOT NULL REFERENCES food(id),
+                food_name   VARCHAR(100) NOT NULL,
+                unit_price  INTEGER      NOT NULL,
+                quantity    INTEGER      NOT NULL,
+                subtotal    INTEGER      NOT NULL,
+                created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
+                updated_at  TIMESTAMP    NOT NULL DEFAULT NOW()
+            )
+        """)
+        print("  テーブル 'purchase_detail' を作成しました")
+
         conn.commit()
     finally:
         conn.close()

@@ -31,7 +31,7 @@ member テーブルと 1:1 の関係。会員の行動シミュレーション�
 | カラム名 | データ型 | 制約 | 説明 | データ投入ルール |
 |---|---|---|---|---|
 | id | SERIAL | PRIMARY KEY | 主キー（自動採番） | 自動採番 |
-| name | VARCHAR(100) | NOT NULL | カテゴリ名 | mimesis の Food プロバイダーで用意されているgenerate用のメソッド名(例：dish, drink, その他）を日本語にして一つずつ保存 |
+| name | VARCHAR(100) | NOT NULL | カテゴリ名 |  |
 | created_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 作成日時 | DEFAULT NOW() |
 | updated_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 更新日時 | DEFAULT NOW() |
 
@@ -45,6 +45,37 @@ category テーブルと 1:多 の関係（1つのカテゴリに複数の食品
 | name | VARCHAR(100) | NOT NULL | 食品名 | mimesis の Food プロバイダーでカテゴリに対応するメソッドを使って生成（料理→dish(), 飲み物→drink(), 果物→fruit(), 野菜→vegetable(), スパイス→spices()）。同名が重複した場合は末尾に連番を付与（例: "りんご 2"） |
 | category_id | INTEGER | NOT NULL, REFERENCES category(id) | カテゴリID | food の name を生成した Food メソッドに対応する category レコードを逆引きして id を設定（dish()→料理、drink()→飲み物、fruit()→果物、vegetable()→野菜、spices()→スパイス） |
 | price | INTEGER | NOT NULL | 値段 | mimesis の Finance プロバイダーで生成し、1000円未満は10円単位で切り捨て、1000円以上は100円単位で切り捨て |
+| created_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 作成日時 | DEFAULT NOW() |
+| updated_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 更新日時 | DEFAULT NOW() |
+
+## purchase（購入）
+
+member テーブルと 1:多 の関係（1会員が複数回購入できる）。
+
+| カラム名 | データ型 | 制約 | 説明 | データ投入ルール |
+|---|---|---|---|---|
+| id | SERIAL | PRIMARY KEY | 主キー（自動採番） | 自動採番 |
+| member_id | INTEGER | NOT NULL, REFERENCES member(id) | 会員ID | member テーブルの id を設定 |
+| member_name | VARCHAR(100) | NOT NULL | 会員名（購入時点） | 購入時点の member の last_name と first_name を結合して設定 |
+| shipping_address | VARCHAR(255) | NOT NULL | 送付先住所 | 購入時点の member の address を設定 |
+| purchased_at | TIMESTAMP | NOT NULL | 購入日時 | データ投入処理の中で設定 |
+| total_amount | INTEGER | NOT NULL | 合計金額 | データ投入処理の中で設定 |
+| created_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 作成日時 | DEFAULT NOW() |
+| updated_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 更新日時 | DEFAULT NOW() |
+
+## purchase_detail（購入明細）
+
+purchase テーブルと 1:多 の関係（1購入に複数の明細が紐づく）。
+
+| カラム名 | データ型 | 制約 | 説明 | データ投入ルール |
+|---|---|---|---|---|
+| id | SERIAL | PRIMARY KEY | 主キー（自動採番） | 自動採番 |
+| purchase_id | INTEGER | NOT NULL, REFERENCES purchase(id) | 購入ID | purchase テーブルの id を設定 |
+| food_id | INTEGER | NOT NULL, REFERENCES food(id) | 商品ID | food テーブルの id を設定 |
+| food_name | VARCHAR(100) | NOT NULL | 商品名（購入時点） | 購入時点の food の name を設定 |
+| unit_price | INTEGER | NOT NULL | 単価（購入時点） | 購入時点の food の price を設定 |
+| quantity | INTEGER | NOT NULL | 数量 | データ投入処理の中で設定 |
+| subtotal | INTEGER | NOT NULL | 小計 | unit_price × quantity |
 | created_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 作成日時 | DEFAULT NOW() |
 | updated_at | TIMESTAMP | NOT NULL DEFAULT NOW() | 更新日時 | DEFAULT NOW() |
 

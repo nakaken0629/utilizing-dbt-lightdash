@@ -13,7 +13,7 @@ design.md・models.md の仕様に従い、デモ用データを日付ごとに�
 import os
 import random
 import sys
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
 import psycopg2
@@ -216,6 +216,72 @@ def insert_foods(
     print(f"  food: {len(rows)} 件挿入しました")
 
 
+def get_foods(cur: psycopg2.extensions.cursor) -> list[tuple]:
+    """food テーブルの全データ (id, name, price) を取得する"""
+    cur.execute("SELECT id, name, price FROM food")
+    return cur.fetchall()
+
+
+def insert_purchases_for_day(
+    cur: psycopg2.extensions.cursor,
+    count: int,
+    target_date: date,
+    all_members: list[tuple],
+    foods: list[tuple],
+) -> None:
+    """指定日の購入・購入明細データを投入する。
+
+    購入日時は target_date のランダムな時刻。
+    明細は 1〜3 件、数量は 1〜5 個。
+    total_amount は明細の subtotal の合計。
+    """
+    total_details = 0
+    for _ in range(count):
+        member_id, last_name, first_name, address = random.choice(all_members)
+        member_name = last_name + first_name
+        purchased_at = datetime.combine(
+            target_date,
+            time(random.randint(0, 23), random.randint(0, 59), random.randint(0, 59)),
+        )
+
+        # 明細生成 (1〜3 件)
+        detail_foods = random.choices(foods, k=random.randint(1, 3))
+        details = []
+        total_amount = 0
+        for food_id, food_name, unit_price in detail_foods:
+            quantity = random.randint(1, 5)
+            subtotal = unit_price * quantity
+            total_amount += subtotal
+            details.append((food_id, food_name, unit_price, quantity, subtotal))
+
+        # purchase 挿入
+        cur.execute(
+            """
+            INSERT INTO purchase
+                (member_id, member_name, shipping_address, purchased_at, total_amount)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id
+            """,
+            (member_id, member_name, address, purchased_at, total_amount),
+        )
+        purchase_id = cur.fetchone()[0]
+
+        # purchase_detail 挿入
+        psycopg2.extras.execute_values(
+            cur,
+            """
+            INSERT INTO purchase_detail
+                (purchase_id, food_id, food_name, unit_price, quantity, subtotal)
+            VALUES %s
+            """,
+            [(purchase_id, food_id, food_name, unit_price, quantity, subtotal)
+             for food_id, food_name, unit_price, quantity, subtotal in details],
+        )
+        total_details += len(details)
+
+    print(f"  purchase: {count} 件、purchase_detail: {total_details} 件挿入しました")
+
+
 def get_member_count(cur: psycopg2.extensions.cursor) -> int:
     """現在の会員数を取得する"""
     cur.execute("SELECT COUNT(*) FROM member")
@@ -228,8 +294,8 @@ def insert_members_for_day(
     target_date: date,
     person: Person,
     address: Address,
-) -> list[int]:
-    """指定日の会員を挿入し、採番された id のリストを返す"""
+) -> list[tuple]:
+    """指定日の会員を挿入し、(id, last_name, first_name, address) のリストを返す"""
     members = [
         (
             person.last_name(),
@@ -252,12 +318,12 @@ def insert_members_for_day(
             (last_name, first_name, birth_date, gender, address, status,
              last_login_at, created_at, updated_at)
         VALUES %s
-        RETURNING id
+        RETURNING id, last_name, first_name, address
         """,
         members,
         fetch=True,
     )
-    return [row[0] for row in inserted]
+    return [(row[0], row[1], row[2], row[3]) for row in inserted]
 
 
 # ---------------------------------------------------------------------------
@@ -297,10 +363,13 @@ def seed(start_date: date) -> None:
         category_id_map = get_category_id_map(cur)
         insert_foods(cur, 1000, start_date, category_id_map)
         conn.commit()
+
+        foods = get_foods(cur)
         print()
 
         current_date = start_date
         total_inserted = 0
+        all_members: list[tuple] = []  # (id, last_name, first_name, address)
 
         while current_date <= today:
             days_elapsed = (current_date - start_date).days
@@ -316,9 +385,11 @@ def seed(start_date: date) -> None:
                 new_count = max(random_new, growth_new)
 
             if new_count > 0:
-                member_ids = insert_members_for_day(
+                new_members = insert_members_for_day(
                     cur, new_count, current_date, person, address
                 )
+                all_members.extend(new_members)
+                member_ids = [m[0] for m in new_members]
                 properties = [generate_member_property(mid) for mid in member_ids]
                 psycopg2.extras.execute_values(
                     cur,
@@ -330,8 +401,14 @@ def seed(start_date: date) -> None:
                 )
                 conn.commit()
 
+            # 購入データを投入（全会員の約 2% + ランダム 0〜3 件）
+            if all_members:
+                purchase_count = max(1, int(len(all_members) * 0.02)) + random.randint(0, 3)
+                insert_purchases_for_day(cur, purchase_count, current_date, all_members, foods)
+                conn.commit()
+
             total_inserted += new_count
-            print(f"  {current_date}: {new_count:4d} 件（累計 {member_count + new_count} 件）")
+            print(f"  {current_date}: 会員 {new_count:4d} 件（累計 {member_count + new_count} 件）")
             current_date += timedelta(days=1)
 
         print()
