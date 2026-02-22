@@ -222,64 +222,146 @@ def get_foods(cur: psycopg2.extensions.cursor) -> list[tuple]:
     return cur.fetchall()
 
 
-def insert_purchases_for_day(
+def build_purchase_details_for_range(
+    foods: list[tuple],
+    min_amount: int,
+    max_amount: int,
+) -> tuple[list[tuple], int]:
+    """指定金額範囲内の購入明細リストと合計金額を返す。
+
+    目標金額 target をランダムに決め、合計が target に達するまで食品を追加する。
+    max_amount を超えないよう制御する。
+    """
+    target = random.randint(min_amount, max_amount)
+    details = []
+    total = 0
+
+    for _ in range(50):
+        if total >= target:
+            break
+        food_id, food_name, unit_price = random.choice(foods)
+        if unit_price <= 0:
+            continue
+        remaining = target - total
+        max_qty = min(10, (remaining + unit_price - 1) // unit_price)
+        quantity = random.randint(1, max(1, max_qty))
+        subtotal = unit_price * quantity
+        if details and total + subtotal > max_amount:
+            continue
+        total += subtotal
+        details.append((food_id, food_name, unit_price, quantity, subtotal))
+
+    if not details:
+        food_id, food_name, unit_price = foods[0]
+        details = [(food_id, food_name, unit_price, 1, unit_price)]
+        total = unit_price
+
+    return details, total
+
+
+def get_active_members_for_day(
     cur: psycopg2.extensions.cursor,
-    count: int,
     target_date: date,
-    all_members: list[tuple],
+) -> tuple[list[tuple], list[tuple]]:
+    """処理日時点でアクティブな通常会員と有料会員を取得する。
+
+    退会会員（status=9）と休眠会員（登録日から to_sleep_days 日経過済み）を除外する。
+
+    Returns:
+        (normal_members, paid_members): 各要素は (id, last_name, first_name, address)
+    """
+    cur.execute(
+        """
+        SELECT m.id, m.last_name, m.first_name, m.address, m.status
+        FROM member m
+        JOIN member_property mp ON m.id = mp.id
+        WHERE m.status != 9
+          AND (
+            mp.to_sleep_days IS NULL
+            OR m.created_at::date + mp.to_sleep_days > %s
+          )
+        """,
+        (target_date,),
+    )
+    rows = cur.fetchall()
+    normal = [(r[0], r[1], r[2], r[3]) for r in rows if r[4] == 0]
+    paid = [(r[0], r[1], r[2], r[3]) for r in rows if r[4] == 1]
+    return normal, paid
+
+
+def process_logins_and_purchases_for_day(
+    cur: psycopg2.extensions.cursor,
+    target_date: date,
+    normal_members: list[tuple],
+    paid_members: list[tuple],
     foods: list[tuple],
 ) -> None:
-    """指定日の購入・購入明細データを投入する。
+    """通常会員・有料会員のログインと購入処理を行う。
 
-    購入日時は target_date のランダムな時刻。
-    明細は 1〜3 件、数量は 1〜5 個。
-    total_amount は明細の subtotal の合計。
+    通常会員: 20% がログイン → ログイン者の 30% が購入（¥2,000〜10,000）
+    有料会員: 50% がログイン → ログイン者の 50% が購入（¥5,000〜20,000）
+    ログインした会員の last_login_at を更新する。
     """
-    total_details = 0
-    for _ in range(count):
-        member_id, last_name, first_name, address = random.choice(all_members)
-        member_name = last_name + first_name
-        purchased_at = datetime.combine(
+    def random_time() -> datetime:
+        return datetime.combine(
             target_date,
             time(random.randint(0, 23), random.randint(0, 59), random.randint(0, 59)),
         )
 
-        # 明細生成 (1〜3 件)
-        detail_foods = random.choices(foods, k=random.randint(1, 3))
-        details = []
-        total_amount = 0
-        for food_id, food_name, unit_price in detail_foods:
-            quantity = random.randint(1, 5)
-            subtotal = unit_price * quantity
-            total_amount += subtotal
-            details.append((food_id, food_name, unit_price, quantity, subtotal))
+    def do_logins_and_purchases(
+        members: list[tuple],
+        login_rate: float,
+        purchase_rate: float,
+        min_amount: int,
+        max_amount: int,
+    ) -> tuple[list[tuple], list[tuple]]:
+        logged_in = [m for m in members if random.random() < login_rate]
 
-        # purchase 挿入
-        cur.execute(
-            """
-            INSERT INTO purchase
-                (member_id, member_name, shipping_address, purchased_at, total_amount)
-            VALUES (%s, %s, %s, %s, %s)
-            RETURNING id
-            """,
-            (member_id, member_name, address, purchased_at, total_amount),
-        )
-        purchase_id = cur.fetchone()[0]
+        if logged_in:
+            psycopg2.extras.execute_values(
+                cur,
+                """
+                UPDATE member
+                SET last_login_at = v.login_at, updated_at = v.login_at
+                FROM (VALUES %s) AS v(id, login_at)
+                WHERE member.id = v.id
+                """,
+                [(m[0], random_time()) for m in logged_in],
+                template="(%s, %s::timestamp)",
+            )
 
-        # purchase_detail 挿入
-        psycopg2.extras.execute_values(
-            cur,
-            """
-            INSERT INTO purchase_detail
-                (purchase_id, food_id, food_name, unit_price, quantity, subtotal)
-            VALUES %s
-            """,
-            [(purchase_id, food_id, food_name, unit_price, quantity, subtotal)
-             for food_id, food_name, unit_price, quantity, subtotal in details],
-        )
-        total_details += len(details)
+        purchasers = [m for m in logged_in if random.random() < purchase_rate]
+        for mid, last_name, first_name, address in purchasers:
+            details, total_amount = build_purchase_details_for_range(foods, min_amount, max_amount)
+            cur.execute(
+                """
+                INSERT INTO purchase
+                    (member_id, member_name, shipping_address, purchased_at, total_amount)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING id
+                """,
+                (mid, last_name + first_name, address, random_time(), total_amount),
+            )
+            purchase_id = cur.fetchone()[0]
+            psycopg2.extras.execute_values(
+                cur,
+                """
+                INSERT INTO purchase_detail
+                    (purchase_id, food_id, food_name, unit_price, quantity, subtotal)
+                VALUES %s
+                """,
+                [(purchase_id, *d) for d in details],
+            )
 
-    print(f"  purchase: {count} 件、purchase_detail: {total_details} 件挿入しました")
+        return logged_in, purchasers
+
+    n_logged, n_bought = do_logins_and_purchases(normal_members, 0.20, 0.30, 2000, 10000)
+    p_logged, p_bought = do_logins_and_purchases(paid_members, 0.50, 0.50, 5000, 20000)
+
+    print(
+        f"  login: 通常 {len(n_logged)} 件、有料 {len(p_logged)} 件  "
+        f"purchase: 通常 {len(n_bought)} 件、有料 {len(p_bought)} 件"
+    )
 
 
 def get_member_count(cur: psycopg2.extensions.cursor) -> int:
@@ -441,7 +523,6 @@ def seed(start_date: date) -> None:
 
         current_date = start_date
         total_inserted = 0
-        all_members: list[tuple] = []  # (id, last_name, first_name, address)
 
         while current_date <= today:
             days_elapsed = (current_date - start_date).days
@@ -460,7 +541,6 @@ def seed(start_date: date) -> None:
                 new_members = insert_members_for_day(
                     cur, new_count, current_date, person, address
                 )
-                all_members.extend(new_members)
                 member_ids = [m[0] for m in new_members]
                 properties = [generate_member_property(mid) for mid in member_ids]
                 psycopg2.extras.execute_values(
@@ -477,11 +557,10 @@ def seed(start_date: date) -> None:
             update_member_statuses_for_day(cur, current_date)
             conn.commit()
 
-            # 購入データを投入（全会員の約 2% + ランダム 0〜3 件）
-            if all_members:
-                purchase_count = max(1, int(len(all_members) * 0.02)) + random.randint(0, 3)
-                insert_purchases_for_day(cur, purchase_count, current_date, all_members, foods)
-                conn.commit()
+            # ログイン・購入処理
+            normal_members, paid_members = get_active_members_for_day(cur, current_date)
+            process_logins_and_purchases_for_day(cur, current_date, normal_members, paid_members, foods)
+            conn.commit()
 
             total_inserted += new_count
             print(f"  {current_date}: 会員 {new_count:4d} 件（累計 {member_count + new_count} 件）")
