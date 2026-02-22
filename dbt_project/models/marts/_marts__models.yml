@@ -5,7 +5,7 @@ models:
     description: "購入ファクトテーブル（購入明細粒度）"
     config:
       meta:
-        label: "購入明細"
+        label: "購入"
         primary_key: id
         group_details:
           purchase_info:

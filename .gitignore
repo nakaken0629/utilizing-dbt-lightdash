@@ -11,6 +11,7 @@ dbt_project/logs/
 
 # Environment
 .env
+.env.local
 
 # Docker
 docker-compose.override.yml

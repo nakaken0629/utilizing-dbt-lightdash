@@ -1,7 +1,7 @@
-demo_ec:
+demo:
   target: dev
   outputs:
-    dev:
+    local:
       type: postgres
       host: localhost
       port: 5434
@@ -11,7 +11,7 @@ demo_ec:
       schema: public
       threads: 4
       sslmode: disable
-    docker:
+    dev:
       type: postgres
       host: dwh-db
       port: 5432

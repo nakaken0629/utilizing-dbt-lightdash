@@ -5,7 +5,7 @@ design.md の仕様に基づき、デモ用データベースを初期化しま�
 
 実行前提:
   - docker-compose.yml の demo-db コンテナが起動していること
-  - プロジェクトルートに .env ファイルが存在すること
+  - プロジェクトルートに .env.local ファイルが存在すること
 
 処理内容:
   1. demo-db データベースが存在する場合は削除する
@@ -23,8 +23,8 @@ import psycopg2
 from psycopg2 import sql
 from dotenv import load_dotenv
 
-# demo ディレクトリの .env を読み込む
-load_dotenv(dotenv_path=Path(__file__).parent / ".env")
+# プロジェクトルートの .env.local を読み込む
+load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env.local")
 
 DEMO_DB = "demo-db"
 DEMO_USER = "demo-user"

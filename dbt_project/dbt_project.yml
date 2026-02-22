@@ -1,7 +1,7 @@
-name: demo_ec
+name: demo
 version: 1.0.0
 config-version: 2
-profile: demo_ec
+profile: demo
 model-paths:
   - models
 test-paths:
@@ -15,7 +15,7 @@ clean-targets:
   - target
   - dbt_packages
 models:
-  demo_ec:
+  demo:
     staging:
       +materialized: view
       +schema: staging

@@ -3,8 +3,8 @@
 
 set -euo pipefail
 
-# demo ディレクトリの .env を読み込む
-ENV_FILE="$(cd "$(dirname "$0")" && pwd)/.env"
+# プロジェクトルートの .env.local を読み込む
+ENV_FILE="$(cd "$(dirname "$0")/.." && pwd)/.env.local"
 if [ -f "$ENV_FILE" ]; then
   set -a
   # shellcheck source=/dev/null

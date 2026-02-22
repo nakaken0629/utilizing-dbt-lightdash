@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """ローダー データ投入ツール
 
-seeds_loader/design.md の仕様に基づき、db から dwh-db の public_raw スキーマに
+seeds_loader/design.md の仕様に基づき、demo-db から dwh-db の public_raw スキーマに
 データを投入します。
 
 実行前提:
   - init.py を実行済みであること（public_raw スキーマが作成済みであること）
-  - db の DEMO-EC データベースにデータが投入済みであること
+  - demo-db データベースにデータが投入済みであること
 
 処理内容:
-  db の各テーブルの内容を public_raw スキーマにそのままコピーする。
+  demo-db の各テーブルの内容を public_raw スキーマにそのままコピーする。
   テーブルが存在しない場合はソースのカラム定義をもとに作成する。
   既存データは実行のたびに洗い替えする。
 
@@ -25,22 +25,22 @@ import psycopg2
 import psycopg2.extras
 from dotenv import load_dotenv
 
-# プロジェクトルートの .env を読み込む
-load_dotenv(dotenv_path=Path(__file__).parent.parent.parent / ".env")
+# プロジェクトルートの .env.local を読み込む
+load_dotenv(dotenv_path=Path(__file__).parent.parent.parent / ".env.local")
 
-# ソース DB (db / DEMO-EC)
+# ソース DB (demo-db)
 SRC_CONN_PARAMS = {
-    "host": os.getenv("DB_HOST", "localhost"),
-    "port": int(os.getenv("DB_PORT", "5433")),
-    "user": os.getenv("PGUSER"),
-    "password": os.getenv("PGPASSWORD"),
-    "dbname": "DEMO-EC",
+    "host": os.getenv("DEMO_PGHOST", "localhost"),
+    "port": int(os.getenv("DEMO_PGPORT", "5435")),
+    "user": os.getenv("DEMO_PGUSER"),
+    "password": os.getenv("DEMO_PGPASSWORD"),
+    "dbname": "demo-db",
 }
 
 # デスティネーション DB (dwh-db)
 DST_CONN_PARAMS = {
-    "host": os.getenv("DWH_DB_HOST", "localhost"),
-    "port": int(os.getenv("DWH_DB_PORT", "5434")),
+    "host": os.getenv("DWH_PGHOST", "localhost"),
+    "port": int(os.getenv("DWH_PGPORT", "5434")),
     "user": os.getenv("DWH_PGUSER"),
     "password": os.getenv("DWH_PGPASSWORD"),
     "dbname": os.getenv("DWH_PGDATABASE"),

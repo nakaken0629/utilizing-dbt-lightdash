@@ -22,8 +22,8 @@ from mimesis import Address, Finance, Food, Person
 from mimesis.locales import Locale
 from dotenv import load_dotenv
 
-# demo ディレクトリの .env を読み込む
-load_dotenv(dotenv_path=Path(__file__).parent / ".env")
+# プロジェクトルートの .env.local を読み込む
+load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env.local")
 
 DEMO_DB = "demo-db"
 CONN_PARAMS = {
@@ -504,8 +504,12 @@ def seed(start_date: date) -> None:
     try:
         cur = conn.cursor()
 
-        # 全テーブルを初期化（CASCADE で参照先も連鎖削除）
-        cur.execute("TRUNCATE TABLE member, category CASCADE")
+        # 全テーブルをTRUNCATE（外部キー依存順：参照元から削除）
+        cur.execute(
+            "TRUNCATE TABLE "
+            "purchase_detail, purchase, member_status_log, "
+            "member_property, food, member, category"
+        )
         conn.commit()
         print("  全テーブルをクリアしました")
 

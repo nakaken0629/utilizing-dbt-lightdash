@@ -5,7 +5,7 @@ seeds_loader/design.md の仕様に基づき、データウェアハウスの pu
 
 実行前提:
   - docker-compose.yml の dwh-db コンテナが起動していること
-  - プロジェクトルートに .env ファイルが存在すること
+  - プロジェクトルートに .env.local ファイルが存在すること
 
 処理内容:
   1. public_raw スキーマが存在する場合、中のテーブルごと削除する
@@ -22,12 +22,12 @@ from pathlib import Path
 import psycopg2
 from dotenv import load_dotenv
 
-# プロジェクトルートの .env を読み込む
-load_dotenv(dotenv_path=Path(__file__).parent.parent.parent / ".env")
+# プロジェクトルートの .env.local を読み込む
+load_dotenv(dotenv_path=Path(__file__).parent.parent.parent / ".env.local")
 
 CONN_PARAMS = {
-    "host": os.getenv("DWH_DB_HOST", "localhost"),
-    "port": int(os.getenv("DWH_DB_PORT", "5434")),
+    "host": os.getenv("DWH_PGHOST", "localhost"),
+    "port": int(os.getenv("DWH_PGPORT", "5434")),
     "user": os.getenv("DWH_PGUSER"),
     "password": os.getenv("DWH_PGPASSWORD"),
     "dbname": os.getenv("DWH_PGDATABASE"),
