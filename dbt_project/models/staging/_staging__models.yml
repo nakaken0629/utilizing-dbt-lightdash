@@ -3,9 +3,6 @@ version: 2
 models:
   - name: stg_member
     description: "会員テーブルのステージングモデル"
-    config:
-      meta:
-        hidden: true
     columns:
       - name: id
         description: "会員ID"
@@ -37,9 +34,6 @@ models:
 
   - name: stg_member_status_log
     description: "会員ステータス変更履歴テーブルのステージングモデル"
-    config:
-      meta:
-        hidden: true
     columns:
       - name: id
         description: "ログID"
@@ -63,9 +57,6 @@ models:
 
   - name: stg_category
     description: "カテゴリテーブルのステージングモデル"
-    config:
-      meta:
-        hidden: true
     columns:
       - name: id
         description: "カテゴリID"
@@ -81,9 +72,6 @@ models:
 
   - name: stg_food
     description: "食品テーブルのステージングモデル"
-    config:
-      meta:
-        hidden: true
     columns:
       - name: id
         description: "食品ID"
@@ -105,9 +93,6 @@ models:
 
   - name: stg_purchase
     description: "購入テーブルのステージングモデル"
-    config:
-      meta:
-        hidden: true
     columns:
       - name: id
         description: "購入ID"
@@ -133,9 +118,6 @@ models:
 
   - name: stg_purchase_detail
     description: "購入明細テーブルのステージングモデル"
-    config:
-      meta:
-        hidden: true
     columns:
       - name: id
         description: "明細ID"
