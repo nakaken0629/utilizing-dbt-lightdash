@@ -1,4 +1,4 @@
-# demo_data
+# demo
 
 これはデモデータを作るためのツールの設計書です。
 
@@ -21,10 +21,10 @@
 
 ## データベースの仕様
 
-- データベースサーバーは、docker-compose.ymlで定義されているdbコンテナ
-- データベースは"DEMO-EC"
+- データベースサーバーは、docker-compose.ymlで定義されているdemo-dbコンテナ
+- データベースは"demo-db"
 - スキーマは、デフォルトで作成される"PUBLIC"
-- ユーザーは"DEMO-EC-DEVELOPER"。PUBLICスキーマに対する全ての権限を有する
+- ユーザーは"demo-user"。PUBLICスキーマに対する全ての権限を有する
 
 ## テーブルの仕様
 

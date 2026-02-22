@@ -7,7 +7,7 @@ design.md・models.md の仕様に従い、デモ用データを日付ごとに�
   - init.py を実行済みであること（データベース・テーブルが作成済みであること）
 
 使い方:
-  uv run python demo_data/seed.py
+  uv run python demo/seed.py
 """
 
 import os
@@ -22,15 +22,15 @@ from mimesis import Address, Finance, Food, Person
 from mimesis.locales import Locale
 from dotenv import load_dotenv
 
-# プロジェクトルートの .env を読み込む
-load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env")
+# demo ディレクトリの .env を読み込む
+load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 
-DEMO_DB = "DEMO-EC"
+DEMO_DB = "demo-db"
 CONN_PARAMS = {
-    "host": os.getenv("DB_HOST", "localhost"),
-    "port": int(os.getenv("DB_PORT", "5433")),
-    "user": os.getenv("PGUSER", "lightdash"),
-    "password": os.getenv("PGPASSWORD", "lightdash_password"),
+    "host": os.getenv("DEMO_PGHOST", "localhost"),
+    "port": int(os.getenv("DEMO_PGPORT", "5435")),
+    "user": os.getenv("DEMO_PGUSER", "demo_user"),
+    "password": os.getenv("DEMO_PGPASSWORD", "demo_password"),
     "dbname": DEMO_DB,
 }
 

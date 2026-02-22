@@ -3,6 +3,16 @@ demo_ec:
   outputs:
     dev:
       type: postgres
+      host: localhost
+      port: 5434
+      user: dbt_user
+      password: dbt_password
+      dbname: dbt_warehouse
+      schema: public
+      threads: 4
+      sslmode: disable
+    docker:
+      type: postgres
       host: dwh-db
       port: 5432
       user: dbt_user

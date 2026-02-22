@@ -4,14 +4,14 @@
 design.md の仕様に基づき、デモ用データベースを初期化します。
 
 実行前提:
-  - docker-compose.yml の db コンテナが起動していること
+  - docker-compose.yml の demo-db コンテナが起動していること
   - プロジェクトルートに .env ファイルが存在すること
 
 処理内容:
-  1. DEMO-EC データベースが存在する場合は削除する
-  2. DEMO-EC データベースを新規作成する
-  3. DEMO-EC-DEVELOPER ユーザーが存在しない場合は作成する
-  4. DEMO-EC-DEVELOPER ユーザーに PUBLIC スキーマへの全権限を付与する
+  1. demo-db データベースが存在する場合は削除する
+  2. demo-db データベースを新規作成する
+  3. demo-user ユーザーが存在しない場合は作成する
+  4. demo-user ユーザーに PUBLIC スキーマへの全権限を付与する
   5. models.md の定義に従いテーブルを作成する
 """
 
@@ -23,20 +23,20 @@ import psycopg2
 from psycopg2 import sql
 from dotenv import load_dotenv
 
-# プロジェクトルートの .env を読み込む
-load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env")
+# demo ディレクトリの .env を読み込む
+load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 
-DEMO_DB = "DEMO-EC"
-DEMO_USER = "DEMO-EC-DEVELOPER"
+DEMO_DB = "demo-db"
+DEMO_USER = "demo-user"
 DEMO_PASSWORD = os.getenv("DEMO_PGPASSWORD", "demo_password")
 
-# db コンテナへの接続設定（ホストからアクセスするためポート 5433 を使用）
+# demo-db コンテナへの接続設定（ホストからアクセスするためポート 5435 を使用）
 CONN_PARAMS = {
-    "host": os.getenv("DB_HOST", "localhost"),
-    "port": int(os.getenv("DB_PORT", "5433")),
-    "user": os.getenv("PGUSER", "lightdash"),
-    "password": os.getenv("PGPASSWORD", "lightdash_password"),
-    "dbname": os.getenv("PGDATABASE", "lightdash"),
+    "host": os.getenv("DEMO_PGHOST", "localhost"),
+    "port": int(os.getenv("DEMO_PGPORT", "5435")),
+    "user": os.getenv("DEMO_PGUSER", "demo_user"),
+    "password": os.getenv("DEMO_PGPASSWORD", "demo_password"),
+    "dbname": os.getenv("DEMO_PGDATABASE", "demo_db"),
 }
 
 
@@ -196,7 +196,7 @@ def create_tables(db_name: str) -> None:
 
 
 def grant_schema_privileges(db_name: str, user: str) -> None:
-    """DEMO-EC データベースに接続し、PUBLIC スキーマへの全権限を付与する"""
+    """demo-db データベースに接続し、PUBLIC スキーマへの全権限を付与する"""
     demo_conn_params = {**CONN_PARAMS, "dbname": db_name}
     conn = psycopg2.connect(**demo_conn_params)
     conn.autocommit = True
@@ -253,7 +253,7 @@ def main() -> None:
 
     except psycopg2.OperationalError as e:
         print(f"\n[エラー] データベースに接続できません: {e}", file=sys.stderr)
-        print("db コンテナが起動しているか確認してください: docker compose up -d db", file=sys.stderr)
+        print("demo-db コンテナが起動しているか確認してください: docker compose up -d demo-db", file=sys.stderr)
         sys.exit(1)
     except psycopg2.Error as e:
         print(f"\n[エラー] {e}", file=sys.stderr)

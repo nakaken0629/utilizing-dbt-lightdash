@@ -28,6 +28,23 @@ services:
       timeout: 5s
       retries: 10
 
+  demo-db:
+    image: postgres:15.4
+    restart: always
+    environment:
+      POSTGRES_USER: ${DEMO_PGUSER}
+      POSTGRES_PASSWORD: ${DEMO_PGPASSWORD}
+      POSTGRES_DB: ${DEMO_PGDATABASE}
+    ports:
+      - "5435:5432"
+    volumes:
+      - demo-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DEMO_PGUSER} -d ${DEMO_PGDATABASE}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   minio:
     image: minio/minio
     restart: always
@@ -88,4 +105,5 @@ services:
 volumes:
   db-data:
   dwh-data:
+  demo-data:
   minio-data:
