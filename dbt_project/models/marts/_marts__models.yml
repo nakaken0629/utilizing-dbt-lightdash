@@ -206,9 +206,16 @@ models:
           meta:
             dimension:
               type: string
-              label: "性別"
+              label: "性別（コード）"
               description: "0: 男 / 1: 女 / 2: それ以外"
               groups: ["personal_info"]
+              hidden: true
+            additional_dimensions:
+              gender_name:
+                type: string
+                label: "性別"
+                sql: "CASE WHEN ${TABLE}.gender = '0' THEN '男' WHEN ${TABLE}.gender = '1' THEN '女' WHEN ${TABLE}.gender = '2' THEN 'それ以外' END"
+                groups: ["personal_info"]
       - name: address
         description: "住所"
         config:
@@ -223,9 +230,16 @@ models:
           meta:
             dimension:
               type: string
-              label: "ステータス"
+              label: "ステータス（コード）"
               description: "0: 無料会員 / 1: 有料会員 / 9: 退会"
               groups: ["membership"]
+              hidden: true
+            additional_dimensions:
+              status_name:
+                type: string
+                label: "ステータス"
+                sql: "CASE WHEN ${TABLE}.status = '0' THEN '無料会員' WHEN ${TABLE}.status = '1' THEN '有料会員' WHEN ${TABLE}.status = '9' THEN '退会' END"
+                groups: ["membership"]
       - name: paid_at
         description: "有料会員登録日"
         config:
