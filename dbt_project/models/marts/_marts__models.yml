@@ -1,160 +1,87 @@
 version: 2
 
 models:
-  - name: fct_orders
-    description: "注文ファクトテーブル"
-    meta:
-      label: "注文"
+  - name: fct_purchase
+    description: "購入ファクトテーブル（購入明細粒度）"
     columns:
-      - name: order_id
-        description: "注文ID"
-        meta:
-          dimension:
-            type: number
-            label: "注文ID"
+      - name: id
+        description: "明細ID"
         tests:
           - unique
           - not_null
-      - name: customer_id
-        description: "顧客ID"
-        meta:
-          dimension:
-            type: number
-            label: "顧客ID"
-      - name: product_id
-        description: "商品ID"
-        meta:
-          dimension:
-            type: number
-            label: "商品ID"
-      - name: product_name
-        description: "商品名"
-        meta:
-          dimension:
-            type: string
-            label: "商品名"
-            group: "商品情報"
-      - name: category
-        description: "商品カテゴリ"
-        meta:
-          dimension:
-            type: string
-            label: "カテゴリ"
-            group: "商品情報"
-      - name: quantity
-        description: "注文数量"
-        meta:
-          dimension:
-            type: number
-            label: "数量"
-          metrics:
-            total_quantity:
-              type: sum
-              label: "合計数量"
+      - name: purchase_id
+        description: "購入ID"
+        tests:
+          - not_null
+      - name: member_id
+        description: "会員ID"
+        tests:
+          - not_null
+      - name: food_id
+        description: "食品ID"
+        tests:
+          - not_null
+      - name: purchased_at
+        description: "購入日時"
+      - name: shipping_address
+        description: "送付先住所"
       - name: unit_price
-        description: "商品単価（円）"
-        meta:
-          dimension:
-            type: number
-            label: "単価"
-            group: "商品情報"
-      - name: order_amount
-        description: "注文金額（円）"
-        meta:
-          dimension:
-            type: number
-            label: "注文金額"
-          metrics:
-            total_revenue:
-              type: sum
-              label: "合計売上"
-            average_order_value:
-              type: average
-              label: "平均注文金額"
-      - name: ordered_at
-        description: "注文日"
-        meta:
-          dimension:
-            type: date
-            label: "注文日"
-            time_intervals:
-              - DAY
-              - WEEK
-              - MONTH
-              - YEAR
+        description: "単価（購入時点、円）"
+      - name: quantity
+        description: "数量"
+      - name: subtotal
+        description: "小計（円）"
 
-  - name: dim_customers
-    description: "顧客ディメンションテーブル（集約情報付き）"
-    meta:
-      label: "顧客"
+  - name: dim_member
+    description: "会員ディメンションテーブル"
     columns:
-      - name: customer_id
-        description: "顧客ID"
-        meta:
-          dimension:
-            type: number
-            label: "顧客ID"
-          metrics:
-            total_customer_count:
-              type: count
-              label: "顧客数"
+      - name: id
+        description: "会員ID"
         tests:
           - unique
           - not_null
-      - name: full_name
-        description: "顧客氏名"
-        meta:
-          dimension:
-            type: string
-            label: "氏名"
-      - name: email
-        description: "メールアドレス"
-        meta:
-          dimension:
-            type: string
-            label: "メールアドレス"
+      - name: last_name
+        description: "苗字"
+      - name: first_name
+        description: "名前"
+      - name: birth_date
+        description: "生年月日"
+      - name: gender
+        description: "性別（0: 男 / 1: 女 / 2: それ以外）"
+      - name: address
+        description: "住所"
+      - name: status
+        description: "ステータス（0: 無料会員 / 1: 有料会員 / 9: 退会）"
+      - name: paid_at
+        description: "有料会員登録日"
+      - name: quit_at
+        description: "退会日"
+      - name: last_login_at
+        description: "最終ログイン日時"
       - name: created_at
-        description: "登録日"
-        meta:
-          dimension:
-            type: date
-            label: "登録日"
-            time_intervals:
-              - DAY
-              - MONTH
-              - YEAR
-      - name: order_count
-        description: "注文回数"
-        meta:
-          dimension:
-            type: number
-            label: "注文回数"
-          metrics:
-            total_order_count:
-              type: sum
-              label: "合計注文回数"
-      - name: total_amount
-        description: "累計購入金額（円）"
-        meta:
-          dimension:
-            type: number
-            label: "累計購入金額"
-          metrics:
-            total_customer_revenue:
-              type: sum
-              label: "顧客合計売上"
-            average_customer_revenue:
-              type: average
-              label: "顧客平均売上"
-      - name: first_order_at
-        description: "初回注文日"
-        meta:
-          dimension:
-            type: date
-            label: "初回注文日"
-      - name: last_order_at
-        description: "最終注文日"
-        meta:
-          dimension:
-            type: date
-            label: "最終注文日"
+        description: "作成日時"
+      - name: updated_at
+        description: "更新日時"
+
+  - name: dim_food
+    description: "食品ディメンションテーブル（カテゴリ情報含む）"
+    columns:
+      - name: id
+        description: "食品ID"
+        tests:
+          - unique
+          - not_null
+      - name: name
+        description: "食品名"
+      - name: category_id
+        description: "カテゴリID"
+        tests:
+          - not_null
+      - name: category_name
+        description: "カテゴリ名"
+      - name: price
+        description: "値段（円）"
+      - name: created_at
+        description: "作成日時"
+      - name: updated_at
+        description: "更新日時"

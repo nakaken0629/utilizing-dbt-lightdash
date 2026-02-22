@@ -1,11 +1,10 @@
-name: ecommerce_analytics
+name: demo_ec
 version: "1.0.0"
 config-version: 2
 
-profile: ecommerce_analytics
+profile: demo_ec
 
 model-paths: ["models"]
-seed-paths: ["seeds"]
 test-paths: ["tests"]
 analysis-paths: ["analyses"]
 macro-paths: ["macros"]
@@ -14,17 +13,11 @@ clean-targets:
   - "target"
   - "dbt_packages"
 
-seeds:
-  ecommerce_analytics:
-    +schema: raw
-
 models:
-  ecommerce_analytics:
+  demo_ec:
     staging:
       +materialized: view
       +schema: staging
-    intermediate:
-      +materialized: ephemeral
     marts:
       +materialized: table
       +schema: marts

@@ -1,0 +1,19 @@
+version: 2
+
+sources:
+  - name: public_raw
+    schema: public_raw
+    description: "seeds_loader によって db から読み込んだローデータ"
+    tables:
+      - name: member
+        description: "会員テーブル"
+      - name: member_status_log
+        description: "会員ステータス変更履歴テーブル"
+      - name: category
+        description: "カテゴリテーブル"
+      - name: food
+        description: "食品テーブル"
+      - name: purchase
+        description: "購入テーブル"
+      - name: purchase_detail
+        description: "購入明細テーブル"

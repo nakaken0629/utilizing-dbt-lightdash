@@ -1,60 +1,146 @@
 version: 2
 
 models:
-  - name: stg_customers
-    description: "顧客マスタのステージングモデル"
+  - name: stg_member
+    description: "会員テーブルのステージングモデル"
     columns:
-      - name: customer_id
-        description: "顧客ID"
+      - name: id
+        description: "会員ID"
         tests:
           - unique
           - not_null
-      - name: first_name
-        description: "名"
       - name: last_name
-        description: "姓"
-      - name: full_name
-        description: "氏名（姓 + 名）"
-      - name: email
-        description: "メールアドレス"
-        tests:
-          - unique
-          - not_null
+        description: "苗字"
+      - name: first_name
+        description: "名前"
+      - name: birth_date
+        description: "生年月日"
+      - name: gender
+        description: "性別（0: 男 / 1: 女 / 2: それ以外）"
+      - name: address
+        description: "住所"
+      - name: status
+        description: "ステータス（0: 無料会員 / 1: 有料会員 / 9: 退会）"
+      - name: paid_at
+        description: "有料会員登録日"
+      - name: quit_at
+        description: "退会日"
+      - name: last_login_at
+        description: "最終ログイン日時"
       - name: created_at
-        description: "登録日"
+        description: "作成日時"
+      - name: updated_at
+        description: "更新日時"
 
-  - name: stg_orders
-    description: "注文データのステージングモデル"
+  - name: stg_member_status_log
+    description: "会員ステータス変更履歴テーブルのステージングモデル"
     columns:
-      - name: order_id
-        description: "注文ID"
+      - name: id
+        description: "ログID"
         tests:
           - unique
           - not_null
-      - name: customer_id
-        description: "顧客ID"
+      - name: member_id
+        description: "会員ID"
         tests:
           - not_null
-      - name: product_id
-        description: "商品ID"
-        tests:
-          - not_null
-      - name: quantity
-        description: "注文数量"
-      - name: ordered_at
-        description: "注文日"
+      - name: status_before
+        description: "変更前ステータス（0: 無料会員 / 1: 有料会員 / 9: 退会）"
+      - name: status_after
+        description: "変更後ステータス（0: 無料会員 / 1: 有料会員 / 9: 退会）"
+      - name: changed_at
+        description: "変更日時"
+      - name: created_at
+        description: "作成日時"
+      - name: updated_at
+        description: "更新日時"
 
-  - name: stg_products
-    description: "商品マスタのステージングモデル"
+  - name: stg_category
+    description: "カテゴリテーブルのステージングモデル"
     columns:
-      - name: product_id
-        description: "商品ID"
+      - name: id
+        description: "カテゴリID"
         tests:
           - unique
           - not_null
-      - name: product_name
-        description: "商品名"
-      - name: category
-        description: "カテゴリ"
+      - name: name
+        description: "カテゴリ名"
+      - name: created_at
+        description: "作成日時"
+      - name: updated_at
+        description: "更新日時"
+
+  - name: stg_food
+    description: "食品テーブルのステージングモデル"
+    columns:
+      - name: id
+        description: "食品ID"
+        tests:
+          - unique
+          - not_null
+      - name: name
+        description: "食品名"
+      - name: category_id
+        description: "カテゴリID"
+        tests:
+          - not_null
       - name: price
-        description: "単価（円）"
+        description: "値段（円）"
+      - name: created_at
+        description: "作成日時"
+      - name: updated_at
+        description: "更新日時"
+
+  - name: stg_purchase
+    description: "購入テーブルのステージングモデル"
+    columns:
+      - name: id
+        description: "購入ID"
+        tests:
+          - unique
+          - not_null
+      - name: member_id
+        description: "会員ID"
+        tests:
+          - not_null
+      - name: member_name
+        description: "会員名（購入時点）"
+      - name: shipping_address
+        description: "送付先住所"
+      - name: purchased_at
+        description: "購入日時"
+      - name: total_amount
+        description: "合計金額（円）"
+      - name: created_at
+        description: "作成日時"
+      - name: updated_at
+        description: "更新日時"
+
+  - name: stg_purchase_detail
+    description: "購入明細テーブルのステージングモデル"
+    columns:
+      - name: id
+        description: "明細ID"
+        tests:
+          - unique
+          - not_null
+      - name: purchase_id
+        description: "購入ID"
+        tests:
+          - not_null
+      - name: food_id
+        description: "食品ID"
+        tests:
+          - not_null
+      - name: food_name
+        description: "食品名（購入時点）"
+      - name: unit_price
+        description: "単価（購入時点、円）"
+      - name: quantity
+        description: "数量"
+      - name: subtotal
+        description: "小計（円）"
+      - name: created_at
+        description: "作成日時"
+      - name: updated_at
+        description: "更新日時"

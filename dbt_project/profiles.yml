@@ -1,4 +1,4 @@
-ecommerce_analytics:
+demo_ec:
   target: dev
   outputs:
     dev:

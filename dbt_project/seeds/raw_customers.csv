@@ -1,6 +1,0 @@
-customer_id,first_name,last_name,email,created_at
-1,太郎,山田,taro.yamada@example.com,2024-01-15
-2,花子,佐藤,hanako.sato@example.com,2024-02-20
-3,一郎,鈴木,ichiro.suzuki@example.com,2024-03-10
-4,美咲,田中,misaki.tanaka@example.com,2024-04-05
-5,健太,高橋,kenta.takahashi@example.com,2024-05-12
