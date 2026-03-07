@@ -45,28 +45,34 @@ services:
       timeout: 5s
       retries: 10
 
-  minio:
-    image: minio/minio
+  localstack:
+    image: localstack/localstack
     restart: always
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    command: server /data --console-address ":9001"
+      - SERVICES=s3
+      - AWS_DEFAULT_REGION=us-east-1
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "4566:4566"
     volumes:
-      - minio-data:/data
+      - localstack-data:/var/lib/localstack
+    healthcheck:
+      test: ["CMD-SHELL", "awslocal s3 ls || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-  minio-init:
-    image: minio/mc
+  localstack-init:
+    image: amazon/aws-cli
     depends_on:
-      - minio
+      localstack:
+        condition: service_healthy
+    environment:
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=us-east-1
     entrypoint: >
       /bin/sh -c "
-      sleep 3;
-      mc alias set local http://minio:9000 minioadmin minioadmin;
-      mc mb --ignore-existing local/lightdash;
+      aws --endpoint-url=http://localstack:4566 s3 mb s3://lightdash --region us-east-1 || true;
       exit 0;
       "
 
@@ -77,7 +83,7 @@ services:
     depends_on:
       - db
       - dwh-db
-      - minio-init
+      - localstack-init
     environment:
       PGHOST: ${PGHOST}
       PGPORT: ${PGPORT}
@@ -89,11 +95,11 @@ services:
       PORT: 8080
       LIGHTDASH_LOG_LEVEL: debug
       LIGHTDASH_QUERY_MAX_LIMIT: 5000
-      S3_ENDPOINT: http://minio:9000
+      S3_ENDPOINT: http://localstack:4566
       S3_BUCKET: lightdash
       S3_REGION: us-east-1
-      S3_ACCESS_KEY: minioadmin
-      S3_SECRET_KEY: minioadmin
+      S3_ACCESS_KEY: test
+      S3_SECRET_KEY: test
       S3_FORCE_PATH_STYLE: "true"
       DBT_PROFILES_DIR: /usr/app/dbt
       DBT_PROJECT_DIR: /usr/app/dbt
@@ -106,4 +112,4 @@ volumes:
   db-data:
   dwh-data:
   demo-data:
-  minio-data:
+  localstack-data:
