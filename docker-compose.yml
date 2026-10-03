@@ -45,34 +45,23 @@ services:
       timeout: 5s
       retries: 10
 
-  localstack:
-    image: localstack/localstack
+  seaweedfs:
+    image: chrislusf/seaweedfs
     restart: always
-    environment:
-      - SERVICES=s3
-      - AWS_DEFAULT_REGION=us-east-1
+    command: "server -s3 -s3.port=8333 -dir=/data -ip.bind=0.0.0.0"
     ports:
-      - "4566:4566"
+      - "8333:8333"
     volumes:
-      - localstack-data:/var/lib/localstack
-    healthcheck:
-      test: ["CMD-SHELL", "awslocal s3 ls || exit 1"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+      - seaweedfs-data:/data
 
-  localstack-init:
+  seaweedfs-init:
     image: amazon/aws-cli
     depends_on:
-      localstack:
-        condition: service_healthy
-    environment:
-      - AWS_ACCESS_KEY_ID=test
-      - AWS_SECRET_ACCESS_KEY=test
-      - AWS_DEFAULT_REGION=us-east-1
+      - seaweedfs
     entrypoint: >
       /bin/sh -c "
-      aws --endpoint-url=http://localstack:4566 s3 mb s3://lightdash --region us-east-1 || true;
+      until aws --endpoint-url=http://seaweedfs:8333 s3 ls --no-sign-request >/dev/null 2>&1; do sleep 1; done;
+      aws --endpoint-url=http://seaweedfs:8333 s3 mb s3://lightdash --no-sign-request || true;
       exit 0;
       "
 
@@ -83,7 +72,7 @@ services:
     depends_on:
       - db
       - dwh-db
-      - localstack-init
+      - seaweedfs-init
     environment:
       PGHOST: ${PGHOST}
       PGPORT: ${PGPORT}
@@ -95,7 +84,7 @@ services:
       PORT: 8080
       LIGHTDASH_LOG_LEVEL: debug
       LIGHTDASH_QUERY_MAX_LIMIT: 5000
-      S3_ENDPOINT: http://localstack:4566
+      S3_ENDPOINT: http://seaweedfs:8333
       S3_BUCKET: lightdash
       S3_REGION: us-east-1
       S3_ACCESS_KEY: test
@@ -112,4 +101,4 @@ volumes:
   db-data:
   dwh-data:
   demo-data:
-  localstack-data:
+  seaweedfs-data:

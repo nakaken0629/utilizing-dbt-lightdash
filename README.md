@@ -61,7 +61,7 @@ docker compose up -d
 | `db` | 5433 | Lightdashメタデータ用 |
 | `dwh-db` | 5434 | DWH（dbt出力先） |
 | `demo-db` | 5435 | デモデータ格納元 |
-| `minio` | 9000, 9001 | S3互換ストレージ |
+| `seaweedfs` | 8333 | S3互換ストレージ |
 | `lightdash` | 8080 | BIツール |
 
 ### 4. デモデータ生成
